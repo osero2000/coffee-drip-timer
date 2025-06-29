@@ -111,7 +111,7 @@ button:hover {
 
 .form-group-horizontal {
     display: flex;
-    gap: 30px;
+    gap: 20px;
 }
 
 .block-form {

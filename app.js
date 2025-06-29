@@ -113,18 +113,20 @@ function initializeApp() {
         const tempUnit = document.querySelector('input[name="temp-unit"]:checked').value;
         const maxTemp = tempUnit === 'celsius' ? 100 : 212;
 
+        const weightUnit = document.querySelector('input[name="weight-unit"]:checked').value;
+        const weightStep = weightUnit === 'oz' ? '0.1' : '1';
         const tempUnitLabel = tempUnit === 'celsius' ? '℃' : '℉';
 
         newBlock.innerHTML = `
             <div class="form-group-inline">
                 <input type="text" class="block-name" placeholder="手順名 (例: 蒸らし)" value="${block.name || ''}">
                 <div class="input-with-unit">
-                    <input type="number" class="block-duration" placeholder="時間" value="${block.duration || ''}">
+                    <input type="number" class="block-duration" placeholder="時間" value="${block.duration || ''}" min="1">
                     <span class="unit">秒</span>
                 </div>
                 <div class="input-with-unit">
-                    <input type="number" class="block-amount" placeholder="目標量" value="${block.targetAmount || ''}">
-                    <span class="unit">g</span>
+                    <input type="number" class="block-amount" placeholder="目標量" value="${block.targetAmount || ''}" min="1" step="${weightStep}">
+                    <span class="unit weight-unit-label">${weightUnit}</span>
                 </div>
                 <div class="input-with-unit">
                     <input type="number" class="block-temp" placeholder="温度" max="${maxTemp}" value="${block.temperature === null ? '' : (block.temperature || maxTemp)}">
@@ -146,6 +148,8 @@ function initializeApp() {
         document.querySelector('input[name="recipe-type"][value="pour"]').checked = true;
         // 温度単位を「℃」にリセット
         document.querySelector('input[name="temp-unit"][value="celsius"]').checked = true;
+        // 重量単位を「g」にリセット
+        document.querySelector('input[name="weight-unit"][value="g"]').checked = true;
 
         // ブロックを全て削除
         containers.blocks.innerHTML = '';
@@ -153,6 +157,22 @@ function initializeApp() {
         addBlockForm();
         // 合計値表示もリセット
         updateRecipeSummary();
+    }
+
+    // 重量単位の変更に応じて、ラベルを更新する
+    function updateWeightUnitLabels() {
+        const weightUnit = document.querySelector('input[name="weight-unit"]:checked').value;
+        const step = weightUnit === 'oz' ? '0.1' : '1';
+
+        document.querySelector('label[for="bean-amount"]').textContent = `豆の量 (${weightUnit}):`;
+        document.getElementById('bean-amount').step = step;
+
+        containers.blocks.querySelectorAll('.weight-unit-label').forEach(label => {
+            label.textContent = weightUnit;
+        });
+        containers.blocks.querySelectorAll('.block-amount').forEach(input => {
+            input.step = step;
+        });
     }
 
     // 温度単位の変更に応じて、既存の温度入力欄のmax値を更新する
@@ -180,17 +200,18 @@ function initializeApp() {
             const duration = parseInt(form.querySelector('.block-duration').value, 10) || 0;
             totalDuration += duration;
             // 最後の有効な目標量を最終的な合計量とする
-            const amount = parseInt(form.querySelector('.block-amount').value, 10) || 0;
+            const amount = parseFloat(form.querySelector('.block-amount').value) || 0;
             if (amount > 0) {
                 finalAmount = amount;
             }
         });
 
+        const weightUnit = document.querySelector('input[name="weight-unit"]:checked').value;
         const minutes = Math.floor(totalDuration / 60);
         const seconds = totalDuration % 60;
 
         document.getElementById('summary-total-time').textContent = `${minutes}分${seconds}秒`;
-        document.getElementById('summary-total-amount').textContent = `${finalAmount}g`;
+        document.getElementById('summary-total-amount').textContent = `${finalAmount}${weightUnit}`;
     }
 
     // 指定されたIDのレシピを編集するためにフォームを準備する
@@ -212,6 +233,7 @@ function initializeApp() {
         document.getElementById('bean-amount').value = recipeToEdit.beanAmount;
         document.querySelector(`input[name="recipe-type"][value="${recipeToEdit.type}"]`).checked = true;
         document.querySelector(`input[name="temp-unit"][value="${recipeToEdit.tempUnit || 'celsius'}"]`).checked = true;
+        document.querySelector(`input[name="weight-unit"][value="${recipeToEdit.weightUnit || 'g'}"]`).checked = true;
 
         // 既存のブロックをフォームに描画
         containers.blocks.innerHTML = ''; // まずは空にする
@@ -380,9 +402,10 @@ function initializeApp() {
     function saveCurrentRecipe() {
         const recipeNameInput = document.getElementById('recipe-name');
         const recipeName = recipeNameInput.value.trim();
-        const beanAmount = parseInt(document.getElementById('bean-amount').value, 10);
+        const beanAmount = parseFloat(document.getElementById('bean-amount').value);
         const recipeType = document.querySelector('input[name="recipe-type"]:checked').value;
         const tempUnit = document.querySelector('input[name="temp-unit"]:checked').value;
+        const weightUnit = document.querySelector('input[name="weight-unit"]:checked').value;
 
         // バリデーション: レシピ名が空じゃないかチェック
         if (!recipeName) {
@@ -416,7 +439,7 @@ function initializeApp() {
         for (const form of blockForms) {
             const name = form.querySelector('.block-name').value.trim();
             const duration = parseInt(form.querySelector('.block-duration').value, 10);
-            const amount = parseInt(form.querySelector('.block-amount').value, 10);
+            const amount = parseFloat(form.querySelector('.block-amount').value);
             const tempInput = form.querySelector('.block-temp').value;
             const temperature = tempInput ? parseInt(tempInput, 10) : null;
             const comment = form.querySelector('.block-comment').value.trim();
@@ -453,7 +476,7 @@ function initializeApp() {
             const updatedRecipes = allRecipes.map(recipe => {
                 if (recipe.id === editingRecipeId) {
                     // 見つかったレシピを新しい内容で上書き
-                    return { ...recipe, name: recipeName, beanAmount, type: recipeType, tempUnit, blocks: blocks };
+                    return { ...recipe, name: recipeName, beanAmount, type: recipeType, tempUnit, weightUnit, blocks: blocks };
                 }
                 return recipe; // 他のレシピはそのまま
             });
@@ -466,6 +489,7 @@ function initializeApp() {
                 name: recipeName,
                 beanAmount,
                 type: recipeType,
+                weightUnit,
                 tempUnit,
                 blocks: blocks
             };
@@ -516,6 +540,9 @@ function initializeApp() {
     containers.settingsForm.addEventListener('change', (event) => {
         if (event.target.name === 'temp-unit') {
             updateTempInputMaxValues();
+        }
+        if (event.target.name === 'weight-unit') {
+            updateWeightUnitLabels();
         }
     });
 
@@ -569,6 +596,9 @@ function initializeApp() {
 
     // アプリ起動時にレシピ一覧を初回描画
     renderRecipeList();
+
+    // アプリ起動時に単位表示を初期化
+    updateWeightUnitLabels();
 }
 
 // DOMの読み込みが完了したらアプリを初期化
