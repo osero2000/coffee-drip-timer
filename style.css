@@ -1,0 +1,224 @@
+/* 基本スタイル */
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    margin: 0;
+    background-color: #f0f2f5;
+    color: #333;
+}
+
+main {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 15px;
+}
+
+/* 画面共通のスタイル */
+.screen {
+    background-color: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
+}
+
+.screen-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    border-bottom: 1px solid #e5e5e5;
+}
+
+.screen-header h1 {
+    font-size: 1.5em;
+    margin: 0;
+}
+
+.screen-content {
+    padding: 20px;
+}
+
+/* ボタンのスタイル */
+button {
+    padding: 10px 15px;
+    border: none;
+    border-radius: 8px;
+    font-size: 1em;
+    cursor: pointer;
+    background-color: #007aff;
+    color: white;
+}
+
+button:hover {
+    opacity: 0.8;
+}
+
+.btn-add {
+    font-size: 1.8em;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%; /* 丸くする */
+}
+
+/* レシピ一覧のスタイル */
+#recipe-list-container {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.recipe-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px;
+    border-bottom: 1px solid #e5e5e5;
+    cursor: pointer;
+}
+
+.recipe-item:last-child {
+    border-bottom: none;
+}
+
+.recipe-item:hover {
+    background-color: #f9f9f9;
+}
+
+.recipe-item-actions button {
+    margin-left: 8px;
+    font-size: 0.9em;
+    padding: 5px 10px;
+    background-color: #8e8e93;
+}
+
+/* 設定画面のフォーム */
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+}
+
+.form-group input[type="text"],
+.form-group input[type="number"] {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    box-sizing: border-box; /* paddingを含めてwidthを100%にする */
+}
+
+.form-group-horizontal {
+    display: flex;
+    gap: 30px;
+}
+
+.block-form {
+    border-top: 1px dashed #ccc;
+    padding: 15px 0;
+    margin-top: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.form-group-inline { display: flex; gap: 10px; align-items: center; }
+.form-group-inline .block-name {
+    flex-grow: 1; /* 手順名が残りのスペースを全て使う */
+}
+.form-group-inline .block-duration,
+.form-group-inline .block-amount,
+.form-group-inline .block-temp {
+    width: 65px; /* 3桁の数字にちょうど良い幅に固定 */
+    flex-shrink: 0;
+}
+.btn-delete-block { background-color: #ff3b30; width: 40px; height: 40px; }
+
+.input-with-unit {
+    display: flex;
+    align-items: center;
+}
+
+.input-with-unit .unit {
+    margin-left: 4px;
+    color: #555;
+    font-size: 0.9em;
+    white-space: nowrap; /* 単位が改行しないように */
+}
+
+.block-comment {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    box-sizing: border-box;
+}
+
+.recipe-summary {
+    background-color: #eef5ff;
+    color: #005bb5;
+    padding: 10px 15px;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    display: flex;
+    justify-content: space-around;
+}
+
+/* タイマー画面のスタイル */
+.timer-layout {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 15px;
+}
+
+.timer-main-display .timer-text {
+    font-size: 4.5em;
+    font-weight: 300;
+    line-height: 1;
+}
+
+.timer-main-display p {
+    margin: 0;
+    color: #888;
+}
+
+.timer-current-block {
+    width: 100%;
+    background-color: #f8f8f8;
+    padding: 15px;
+    border-radius: 10px;
+}
+
+.timer-current-block h2 {
+    margin: 0 0 10px 0;
+    font-size: 1.8em;
+}
+
+.timer-text-small {
+    font-size: 2.5em;
+    font-weight: 500;
+    color: #007aff;
+}
+
+.timer-current-block p {
+    margin: 5px 0 0 0;
+    font-size: 1.1em;
+}
+
+.comment-text {
+    font-style: italic;
+    color: #666;
+}
+
+.timer-controls button {
+    padding: 15px 40px;
+    font-size: 1.2em;
+    border-radius: 30px;
+}
+.btn-secondary { background-color: #e5e5e5; color: #333; }
+.btn-primary.running {
+    background-color: #ff3b30; /* 実行中は赤色に */
+}

@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>コーヒードリップタイマー</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <main>
+        <!-- ===============================================
+             レシピ一覧画面
+             =============================================== -->
+        <section id="screen-recipe-list" class="screen">
+            <header class="screen-header">
+                <h1>レシピ一覧</h1>
+                <button id="btn-add-new-recipe" class="btn-add">+</button>
+            </header>
+            <div class="screen-content">
+                <ul id="recipe-list-container">
+                    <!-- ここにJavaScriptでレシピが動的に追加される -->
+                </ul>
+            </div>
+        </section>
+
+        <!-- ===============================================
+             レシピ設定画面
+             =============================================== -->
+        <section id="screen-recipe-settings" class="screen" hidden>
+            <header class="screen-header">
+                <h1 id="settings-title">新しいレシピ</h1>
+            </header>
+            <div class="screen-content">
+                <h2>基本設定</h2>
+                <div class="form-group">
+                    <label for="recipe-name">レシピ名:</label>
+                    <input type="text" id="recipe-name" placeholder="例: 朝の一杯用">
+                </div>
+                <div class="form-group">
+                    <label for="bean-amount">豆の量 (g):</label>
+                    <input type="number" id="bean-amount" placeholder="例: 20">
+                </div>
+                <div class="form-group-horizontal">
+                    <div class="form-group">
+                        <label>管理方法:</label>
+                        <label><input type="radio" name="recipe-type" value="pour" checked> 投湯量</label>
+                        <label><input type="radio" name="recipe-type" value="extraction"> 抽出量</label>
+                    </div>
+                    <div class="form-group">
+                        <label>温度単位:</label>
+                        <label><input type="radio" name="temp-unit" value="celsius" checked> ℃</label>
+                        <label><input type="radio" name="temp-unit" value="fahrenheit"> ℉</label>
+                    </div>
+                </div>
+
+                <!-- ブロックを追加していくエリア -->
+                <h2>ドリップ手順</h2>
+                <div class="recipe-summary">
+                    <span>合計時間: <strong id="summary-total-time">0分0秒</strong></span>
+                    <span>合計量: <strong id="summary-total-amount">0g</strong></span>
+                </div>
+                <div id="blocks-container">
+                    <!-- ここにJavaScriptでブロックが追加される -->
+                </div>
+                <button id="btn-add-block">手順を追加</button>
+
+                <div class="form-actions">
+                    <button id="btn-save-recipe">保存</button>
+                    <button id="btn-cancel-settings">キャンセル</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===============================================
+             ドリップタイマー画面
+             =============================================== -->
+        <section id="screen-drip-timer" class="screen" hidden>
+            <header class="screen-header">
+                <button id="btn-timer-back" class="btn-secondary">← 戻る</button>
+                <h1 id="timer-recipe-name">レシピ名</h1>
+            </header>
+            <div class="screen-content timer-layout">
+                <div class="timer-main-display">
+                    <div id="timer-total-time" class="timer-text">00:00</div>
+                    <p>合計時間</p>
+                </div>
+                <div class="timer-current-block">
+                    <h2 id="timer-current-block-name">手順名</h2>
+                    <div id="timer-block-countdown" class="timer-text-small">00:00</div>
+                    <p id="timer-target-amount">目標: 0g</p>
+                    <p id="timer-block-comment" class="comment-text"></p>
+                </div>
+                <div class="timer-next-block">
+                    <h3>次の手順</h3>
+                    <p id="timer-next-block-info">...</p>
+                </div>
+                <div class="timer-controls">
+                    <button id="btn-timer-start-stop" class="btn-primary">スタート</button>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script src="app.js"></script>
+</body>
+</html>
