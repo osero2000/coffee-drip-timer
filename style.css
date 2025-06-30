@@ -51,6 +51,11 @@ main {
     position: relative;
 }
 
+.screen-header > div {
+    display: flex;
+    gap: 10px;
+}
+
 .header-title-centered {
     position: absolute;
     left: 50%;
@@ -457,4 +462,36 @@ button:hover, button:focus {
     border: none;
     padding: 0;
     line-height: 1;
+}
+
+/* ダークモードの色の定義 */
+body.dark-mode {
+    --color-primary-light: rgba(0, 122, 255, 0.15);
+    --color-primary-dark: #3395ff;
+
+    --color-background: #121212;
+    --color-surface: #1e1e1e;
+    --color-surface-hover: #2a2a2a;
+    --color-surface-alt: #252525;
+
+    --color-text-primary: #e0e0e0;
+    --color-text-secondary: #a0a0a0;
+    --color-text-tertiary: #757575;
+    --color-border: #333333;
+    --color-border-light: #444444;
+    --color-border-dashed: #555555;
+}
+
+/* ダークモード用の個別調整 */
+body.dark-mode .btn-icon svg {
+    fill: var(--color-text-primary);
+}
+
+body.dark-mode .form-group input[type="text"]:focus,
+body.dark-mode .form-group input[type="number"]:focus {
+    box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.3);
+}
+
+body.dark-mode .modal-content {
+    box-shadow: 0 4px 15px rgba(0,0,0,0.5);
 }

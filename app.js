@@ -34,7 +34,6 @@ const STRINGS = {
         dripFinish: 'ドリップ完了！お疲れ様でした！',
         timerCurrentAmount: '現在',
         timerTargetAmount: '目標量',
-        timerStepAmount: '投湯/抽出量',
         temperatureLabel: '温度',
         dripEnd: '終わり',
         timerFinish: '終了',
@@ -76,6 +75,7 @@ function initializeApp() {
         timerStartStop: document.getElementById('btn-timer-start-stop'),
         cancelSettings: document.getElementById('btn-cancel-settings'),
         toggleSound: document.getElementById('btn-toggle-sound'),
+        toggleTheme: document.getElementById('btn-toggle-theme'),
         showCredits: document.getElementById('btn-show-credits'),
         closeModal: document.getElementById('modal-close'),
     };
@@ -115,6 +115,7 @@ function initializeApp() {
     let currentBlockIndex = 0; // 現在のブロックのインデックス
     let currentBlockTimeLeft = 0; // 現在のブロックの残り時間
     let isSoundEnabled = true; // サウンドが有効かどうかのフラグ
+    let currentTheme = 'light'; // 'light' or 'dark'
 
     // --- データストレージのロジック (localStorage) ---
     const STORAGE_KEY = 'coffee-drip-timer-recipes';
@@ -305,6 +306,7 @@ function initializeApp() {
 
     // --- 画面スリープ & サウンド管理 ---
     let wakeLock = null; // 画面スリープ防止用
+    const THEME_STORAGE_KEY = 'coffee-drip-timer-theme';
     const SOUND_STORAGE_KEY = 'coffee-drip-timer-sound-enabled';
     const sounds = {
         countdown: new Audio('audio/countdown.mp3'),
@@ -342,6 +344,31 @@ function initializeApp() {
         isSoundEnabled = !isSoundEnabled;
         localStorage.setItem(SOUND_STORAGE_KEY, isSoundEnabled);
         updateSoundButtonIcon();
+    }
+
+    // テーマボタンのアイコンを更新する
+    function updateThemeButtonIcon() {
+        const sunIcon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zM2 13h2c.55 0 1-.45 1-1s-.45-1-1-1H2c-.55 0-1 .45-1 1s.45 1 1 1zm18 0h2c.55 0 1-.45 1-1s-.45-1-1-1h-2c-.55 0-1 .45-1 1s.45 1 1 1zM11 2v2c0 .55.45 1 1 1s1-.45 1-1V2c0-.55-.45-1-1-1s-1 .45-1 1zm0 18v2c0 .55.45 1 1 1s1-.45 1-1v-2c0-.55-.45-1-1-1s-1 .45-1 1zM5.64 5.64c.39.39 1.02.39 1.41 0s.39-1.02 0-1.41L5.64 4.22c-.39-.39-1.02-.39-1.41 0s-.39 1.02 0 1.41l1.41 1.41zm12.73 12.73c.39.39 1.02.39 1.41 0s.39-1.02 0-1.41l-1.41-1.41c-.39-.39-1.02-.39-1.41 0s-.39 1.02 0 1.41l1.41 1.41zM4.22 18.36c.39.39 1.02.39 1.41 0s.39-1.02 0-1.41l-1.41-1.41c-.39-.39-1.02-.39-1.41 0s-.39 1.02 0 1.41l1.41 1.41zm14.14-14.14c.39.39 1.02.39 1.41 0s.39-1.02 0-1.41l-1.41-1.41c-.39-.39-1.02-.39-1.41 0s-.39 1.02 0 1.41l1.41 1.41z"></path></svg>`;
+        const moonIcon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12.3 4.9c.4-.2.6-.7.4-1.1-.2-.4-.7-.6-1.1-.4-3.8.9-6.6 4.3-6.6 8.5 0 4.8 3.9 8.8 8.8 8.8 3.6 0 6.8-2.2 8.1-5.4.2-.4 0-.9-.4-1.1-.4-.2-.9 0-1.1.4-1 2.5-3.5 4.2-6.5 4.2-3.9 0-7-3.1-7-7 0-3.5 2.5-6.4 5.9-6.9z"></path></svg>`;
+        buttons.toggleTheme.innerHTML = currentTheme === 'light' ? moonIcon : sunIcon;
+    }
+
+    // テーマ設定を切り替える
+    function toggleTheme() {
+        currentTheme = currentTheme === 'light' ? 'dark' : 'light';
+        document.body.classList.toggle('dark-mode');
+        localStorage.setItem(THEME_STORAGE_KEY, currentTheme);
+        updateThemeButtonIcon();
+    }
+
+    // アプリ起動時にテーマ設定を読み込む
+    function loadThemeSetting() {
+        const savedTheme = localStorage.getItem(THEME_STORAGE_KEY) || 'light';
+        currentTheme = savedTheme;
+        if (currentTheme === 'dark') {
+            document.body.classList.add('dark-mode');
+        }
+        updateThemeButtonIcon();
     }
 
     // アプリ起動時にサウンド設定を読み込む
@@ -494,13 +521,14 @@ function initializeApp() {
         domTimer.blockCountdown.textContent = formatTime(block.duration);
 
         // 累計量の表示を更新
+        const stepLabel = activeRecipe.type === 'pour' ? S.pourLabel : S.extractionLabel;
         const previousAmount = prevBlock ? prevBlock.targetAmount : 0;
         const stepAmount = block.targetAmount - previousAmount;
         const displayPreviousAmount = weightUnit === 'oz' ? previousAmount.toFixed(1) : Math.round(previousAmount);
         const displayStepAmount = weightUnit === 'oz' ? stepAmount.toFixed(1) : Math.round(stepAmount);
         const displayTargetAmount = weightUnit === 'oz' ? block.targetAmount.toFixed(1) : Math.round(block.targetAmount);
         domTimer.previousAmount.textContent = `${S.timerCurrentAmount}: ${displayPreviousAmount}${weightUnit}`;
-        domTimer.stepAmount.textContent = `${S.timerStepAmount}: ${displayStepAmount}${weightUnit}`;
+        domTimer.stepAmount.textContent = `${stepLabel}: ${displayStepAmount}${weightUnit}`;
         domTimer.targetAmount.textContent = `${S.timerTargetAmount}: ${displayTargetAmount}${weightUnit}`;
         domTimer.blockComment.textContent = block.comment || '';
         domTimer.currentBlockTemp.textContent = block.temperature ? `${S.temperatureLabel}: ${block.temperature}${tempUnitLabel}` : '';
@@ -752,6 +780,9 @@ function initializeApp() {
     // サウンド切り替えボタン
     buttons.toggleSound.addEventListener('click', toggleSound);
 
+    // テーマ切り替えボタン
+    buttons.toggleTheme.addEventListener('click', toggleTheme);
+
     // タイマーのリセットボタン
     buttons.timerReset.addEventListener('click', resetTimer);
 
@@ -845,6 +876,9 @@ function initializeApp() {
 
     // アプリ起動時にサウンド設定を読み込んでボタンに反映
     loadSoundSetting();
+
+    // アプリ起動時にテーマ設定を読み込んでボタンに反映
+    loadThemeSetting();
 }
 
 // DOMの読み込みが完了したらアプリを初期化
