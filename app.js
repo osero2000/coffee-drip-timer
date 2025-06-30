@@ -1,5 +1,5 @@
 // --- 国際化対応 (i18n) の準備 ---
-const APP_VERSION = '1.0.0';
+const APP_VERSION = '1.1.0';
 // アプリ内で使う全ての文字列をここにまとめる
 const STRINGS = {
     ja: {
@@ -902,3 +902,14 @@ function initializeApp() {
 
 // DOMの読み込みが完了したらアプリを初期化
 document.addEventListener('DOMContentLoaded', initializeApp);
+
+// Service Workerを登録する
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').then(registration => {
+            console.log('ServiceWorker registration successful with scope: ', registration.scope);
+        }, err => {
+            console.log('ServiceWorker registration failed: ', err);
+        });
+    });
+}
