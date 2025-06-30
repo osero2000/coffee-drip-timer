@@ -617,11 +617,22 @@ function initializeApp() {
             const li = document.createElement('li');
             li.className = 'recipe-item';
             li.dataset.recipeId = recipe.id;
-            const typeLabel = recipe.type === 'pour' ? S.pourLabel : S.extractionLabel;
             const weightUnit = recipe.weightUnit || 'g';
 
+            const beanIcon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M14.8,6.2C14.2,5,13.1,4,12,4S9.8,5,9.2,6.2C8.5,7.9,8,9.8,8,12s0.5,4.1,1.2,5.8C9.8,19,10.9,20,12,20s2.2-1,2.8-2.2 C15.5,16.1,16,14.2,16,12S15.5,7.9,14.8,6.2z"/></svg>`;
+            const typeIcon = recipe.type === 'pour'
+                ? `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" fill="currentColor"><path d="M240-200v-520L120-880h600v120h80q33 0 56.5 23.5T880-680v200q0 33-23.5 56.5T800-400h-80v200H240Zm80-80h320v-520H280l40 52v468Zm400-200h80v-200h-80v200ZM480-320h120v-440H480v440ZM120-80v-80h720v80H120Zm340-460Z"/></svg>`
+                : `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M18 8h1a4 4 0 0 1 0 8h-1"></path><path d="M2 8h14v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"></path><line x1="6" y1="1" x2="6" y2="4"></line><line x1="10" y1="1" x2="10" y2="4"></line><line x1="14" y1="1" x2="14" y2="4"></line></svg>`;
+            const typeLabel = recipe.type === 'pour' ? S.pourLabel : S.extractionLabel;
+
             li.innerHTML = `
-                <span>${recipe.name} (${recipe.beanAmount}${weightUnit}) [${typeLabel}]</span>
+                <div class="recipe-item-main">
+                    <span class="recipe-item-name">${recipe.name}</span>
+                    <div class="recipe-item-details">
+                        <span class="recipe-detail-tag">${beanIcon} ${recipe.beanAmount}${weightUnit}</span>
+                        <span class="recipe-detail-tag">${typeIcon} ${typeLabel}</span>
+                    </div>
+                </div>
                 <div class="recipe-item-actions">
                     <button class="btn-edit">編集</button>
                     <button class="btn-delete">削除</button>
