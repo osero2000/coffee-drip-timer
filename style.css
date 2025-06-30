@@ -60,6 +60,7 @@ main {
     position: absolute;
     left: 50%;
     transform: translateX(-50%);
+    max-width: calc(100% - 160px); /* 左右のボタン用に80pxずつのスペースを確保 */
 }
 
 .screen-header h1 {
@@ -327,7 +328,7 @@ button:hover, button:focus {
     position: absolute;
     left: 50%;
     transform: translateX(-50%);
-    width: 70%; /* 長いタイトルがボタンに重ならないように幅を制限 */
+    max-width: calc(100% - 160px); /* 左右のボタン用に80pxずつのスペースを確保 */
     text-align: center;
 }
 .timer-recipe-title {

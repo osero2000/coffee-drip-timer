@@ -1,5 +1,5 @@
 // --- 国際化対応 (i18n) の準備 ---
-const APP_VERSION = '1.2.1';
+const APP_VERSION = '1.2.2';
 // アプリ内で使う全ての文字列をここにまとめる
 const STRINGS = {
     ja: {
