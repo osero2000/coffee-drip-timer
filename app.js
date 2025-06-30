@@ -457,7 +457,7 @@ function initializeApp() {
         domTimer.startStopButton.textContent = S.timerResume;
     }
 
-    function stopTimer() {
+    function stopTimer(shouldResetDisplay = true) {
         // スリープ防止を解除
         releaseWakeLock();
 
@@ -465,7 +465,9 @@ function initializeApp() {
         domTimer.startStopButton.textContent = S.timerStart;
         clearInterval(timerInterval);
         timerInterval = null;
-        renderTimerScreen(); // タイマー表示を初期状態に戻す
+        if (shouldResetDisplay) {
+            renderTimerScreen(); // タイマー表示を初期状態に戻す
+        }
     }
 
     function resetTimer() {
@@ -758,7 +760,7 @@ function initializeApp() {
         if (timerState === 'running') {
             pauseTimer();
         } else if (timerState === 'finished') {
-            stopTimer();
+            stopTimer(false); // 画面表示はリセットしない
         } else {
             startTimer();
         }

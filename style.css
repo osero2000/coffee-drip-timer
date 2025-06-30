@@ -168,6 +168,10 @@ button:hover, button:focus {
     background-color: var(--color-danger);
 }
 
+.recipe-item-actions .btn-edit {
+    background-color: var(--color-success);
+}
+
 /* 設定画面のグループ化 */
 .settings-group {
     background-color: var(--color-surface-alt);
@@ -376,16 +380,12 @@ button:hover, button:focus {
     justify-content: center;
     align-items: center;
     width: 100%;
-    position: relative;
+    gap: 50px;
 }
 .timer-controls button {
     padding: 15px 40px;
     font-size: 1.2em;
     border-radius: 30px;
-}
-.timer-controls .btn-danger {
-    position: absolute;
-    left: 0;
 }
 .btn-secondary { background-color: var(--color-border); color: var(--color-text-primary); }
 
