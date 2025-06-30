@@ -1,5 +1,5 @@
 // --- 国際化対応 (i18n) の準備 ---
-const APP_VERSION = '1.2.6';
+const APP_VERSION = '1.2.7';
 // アプリ内で使う全ての文字列をここにまとめる
 const STRINGS = {
     ja: {
@@ -544,9 +544,17 @@ function initializeApp() {
         domTimer.startStopButton.textContent = S.timerResume;
     }
 
-    function stopTimer(shouldResetDisplay = true) {
+    async function stopTimer(shouldResetDisplay = true) {
         // スリープ防止を解除
         releaseWakeLock();
+
+        // オーディオコンテキストを閉じて、次回のタイマー開始時に再初期化できるようにする
+        if (audioContext && audioContext.state !== 'closed') {
+            await audioContext.close();
+            console.log("AudioContextが閉じられました。");
+        }
+        audioContext = null;
+        audioInitPromise = null;
 
         timerState = 'stopped';
         domTimer.startStopButton.textContent = S.timerStart;
@@ -557,10 +565,10 @@ function initializeApp() {
         }
     }
 
-    function resetTimer() {
+    async function resetTimer() {
         if (confirm(S.confirmReset)) {
             playSound('reset'); // リセット音
-            stopTimer();
+            await stopTimer();
         }
     }
 
@@ -614,12 +622,12 @@ function initializeApp() {
     }
 
     // ドリップを開始するためにタイマー画面を準備する
-    function startDrip(recipeId) {
+    async function startDrip(recipeId) {
         // オーディオの読み込みをバックグラウンドで開始
         initAudio();
 
         if (timerState !== 'stopped') {
-            stopTimer();
+            await stopTimer();
         }
         const recipes = getRecipesFromStorage();
         activeRecipe = recipes.find(recipe => recipe.id === recipeId);
@@ -828,9 +836,9 @@ function initializeApp() {
     buttons.settingsBack.addEventListener('click', () => navigateTo('recipeList'));
 
     // タイマー画面の「戻る」ボタン
-    buttons.timerBack.addEventListener('click', () => {
+    buttons.timerBack.addEventListener('click', async () => {
         if (timerState !== 'stopped') {
-            stopTimer();
+            await stopTimer();
         }
         navigateTo('recipeList');
     });
@@ -861,11 +869,11 @@ function initializeApp() {
     buttons.timerReset.addEventListener('click', resetTimer);
 
     // タイマーの「スタート/ストップ」ボタン
-    buttons.timerStartStop.addEventListener('click', () => {
+    buttons.timerStartStop.addEventListener('click', async () => {
         if (timerState === 'running') {
             pauseTimer();
         } else if (timerState === 'finished') {
-            stopTimer(false); // 画面表示はリセットしない
+            await stopTimer(false); // 画面表示はリセットしない
         } else {
             startTimer();
         }
