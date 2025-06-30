@@ -1,5 +1,5 @@
 // --- 国際化対応 (i18n) の準備 ---
-const APP_VERSION = '1.2.8';
+const APP_VERSION = '1.2.9';
 // アプリ内で使う全ての文字列をここにまとめる
 const STRINGS = {
     ja: {
@@ -164,7 +164,7 @@ function initializeApp() {
 
     // --- レシピ設定画面のロジック ---
     function addBlockForm(block = {}) {
-        const blockId = `block-${Date.now()}`; // ユニークなIDを生成
+        const blockId = `block-${Date.now()}-${Math.random().toString(36).slice(2)}`; // 衝突しないユニークなIDを生成
         const newBlock = document.createElement('div');
         newBlock.className = 'block-form';
         newBlock.id = blockId;
