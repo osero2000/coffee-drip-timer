@@ -6,11 +6,19 @@ const STRINGS = {
         alertRecipeName: 'レシピ名を入力してください。',
         alertBeanAmount: '豆の量を入力してください。',
         alertDuplicateRecipe: '同じ名前のレシピが既に存在します。別の名前を付けてください。',
-        alertInvalidBlock: 'すべての手順に、有効な名前、時間(1秒以上)、目標量(1g以上)を入力してください。',
+        alertInvalidBlock: 'すべての手順に、有効な名前、時間(1秒以上)、目標量(0g以上)を入力してください。',
         alertInvalidTemp: '温度には数値を入力してください。',
         alertNoBlocks: 'ドリップ手順を1つ以上追加してください。',
         alertRecipeSaved: 'レシピを保存しました！',
         alertRecipeUpdated: 'レシピを更新しました！',
+        // プレースホルダー
+        placeholderRecipeName: '例: 朝の一杯用',
+        placeholderBeanAmount: '例: 20',
+        placeholderBlockName: '手順名 (例: 蒸らし)',
+        placeholderDuration: '時間',
+        placeholderAmount: '目標量',
+        placeholderTemp: '温度',
+        placeholderComment: 'コメント (例: ゆっくりのの字で)',
         confirmDelete: 'このレシピを本当に削除しますか？',
         // UIテキスト
         newRecipeTitle: '新しいレシピ',
@@ -29,6 +37,7 @@ const STRINGS = {
         temperatureLabel: '温度',
         dripEnd: '終わり',
         timerFinish: '終了',
+        lastStepInfo: '最後の工程です',
         confirmReset: 'タイマーをリセットしますか？',
         alertTimerStopped: 'タイマーが29分59秒に達したため、自動的に停止しました。',
     },
@@ -42,6 +51,8 @@ function initializeApp() {
 
     // --- UIテキストの初期設定 ---
     document.getElementById('main-title').textContent = S.mainTitle;
+    document.getElementById('recipe-name').placeholder = S.placeholderRecipeName;
+    document.getElementById('bean-amount').placeholder = S.placeholderBeanAmount;
 
     // --- DOM要素の取得 ---
     // 画面のセクション
@@ -140,22 +151,22 @@ function initializeApp() {
 
         newBlock.innerHTML = `
             <div class="form-group-inline">
-                <input type="text" class="block-name" placeholder="手順名 (例: 蒸らし)" value="${block.name || ''}">
+                <input type="text" class="block-name" placeholder="${S.placeholderBlockName}" value="${block.name || ''}">
                 <div class="input-with-unit">
-                    <input type="number" class="block-duration" placeholder="時間" value="${block.duration || ''}" min="1">
+                    <input type="number" class="block-duration" placeholder="${S.placeholderDuration}" value="${block.duration || ''}" min="1">
                     <span class="unit">秒</span>
                 </div>
                 <div class="input-with-unit">
-                    <input type="number" class="block-amount" placeholder="目標量" value="${block.targetAmount || ''}" min="0" step="${weightStep}">
+                    <input type="number" class="block-amount" placeholder="${S.placeholderAmount}" value="${block.targetAmount || ''}" min="0" step="${weightStep}">
                     <span class="unit weight-unit-label">${weightUnit}</span>
                 </div>
                 <div class="input-with-unit">
-                    <input type="number" class="block-temp" placeholder="温度" max="${maxTemp}" value="${block.temperature === null ? '' : (block.temperature || maxTemp)}">
+                    <input type="number" class="block-temp" placeholder="${S.placeholderTemp}" max="${maxTemp}" value="${block.temperature === null ? '' : (block.temperature || maxTemp)}">
                     <span class="unit temp-unit-label">${tempUnitLabel}</span>
                 </div>
                 <button class="btn-delete-block" data-target-id="${blockId}">×</button>
             </div>
-            <input type="text" class="block-comment" placeholder="コメント (例: ドリッパーを振る)" value="${block.comment || ''}">
+            <input type="text" class="block-comment" placeholder="${S.placeholderComment}" value="${block.comment || ''}">
         `;
         containers.blocks.appendChild(newBlock);
         newBlock.querySelector('.block-name').focus(); // 新しい手順名にフォーカス
@@ -370,6 +381,7 @@ function initializeApp() {
                     domTimer.blockName.textContent = S.dripEnd;
                     domTimer.blockCountdown.textContent = '';
                     domTimer.startStopButton.textContent = S.timerFinish;
+                    domTimer.nextBlockInfo.textContent = S.dripFinish;
                 }
             }
         }
@@ -467,7 +479,7 @@ function initializeApp() {
             }
             domTimer.nextBlockInfo.textContent = nextInfo;
         } else {
-            domTimer.nextBlockInfo.textContent = '最後の工程です';
+            domTimer.nextBlockInfo.textContent = S.lastStepInfo;
         }
     }
 
