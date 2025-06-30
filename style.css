@@ -83,6 +83,24 @@ button:hover {
     background-color: #f9f9f9;
 }
 
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+    text-align: center;
+    color: #888;
+}
+
+.empty-state svg {
+    width: 64px;
+    height: 64px;
+    stroke-width: 1;
+    color: #ccc;
+    margin-bottom: 15px;
+}
+
 .recipe-item-actions button {
     margin-left: 8px;
     font-size: 0.9em;
@@ -163,6 +181,16 @@ button:hover {
     margin-bottom: 15px;
     display: flex;
     justify-content: space-around;
+}
+
+.form-actions {
+    margin-top: 20px;
+    display: flex;
+    gap: 10px;
+}
+
+.form-actions #btn-save-recipe {
+    flex-grow: 1; /* 保存ボタンが残りのスペースを全て使う */
 }
 
 .btn-danger { background-color: #ff3b30; }
@@ -249,3 +277,9 @@ button:hover {
     left: 0;
 }
 .btn-secondary { background-color: #e5e5e5; color: #333; }
+
+.btn-outline {
+    background-color: transparent;
+    color: #007aff;
+    border: 1px solid #007aff;
+}
