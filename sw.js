@@ -1,6 +1,6 @@
 const CACHE_NAME = 'coffee-drip-timer-cache-v1.1.0';
 const urlsToCache = [
-  '/',
+  '.', // ルートパスの指定を相対パスに変更
   'index.html',
   'style.css',
   'app.js',
