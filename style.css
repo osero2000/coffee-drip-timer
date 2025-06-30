@@ -136,6 +136,41 @@ button:hover, button:focus {
     cursor: pointer;
 }
 
+.recipe-item-main {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex-grow: 1;
+}
+
+.recipe-item-name {
+    font-weight: 500;
+    font-size: 1.1em;
+}
+
+.recipe-item-details {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.recipe-detail-tag {
+    background-color: var(--color-background);
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 0.85em;
+    color: var(--color-text-secondary);
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.recipe-detail-tag svg {
+    width: 14px;
+    height: 14px;
+    fill: var(--color-text-secondary);
+}
+
 .recipe-item:last-child {
     border-bottom: none;
 }
@@ -494,4 +529,8 @@ body.dark-mode .form-group input[type="number"]:focus {
 
 body.dark-mode .modal-content {
     box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+}
+
+body.dark-mode .recipe-detail-tag {
+    background-color: var(--color-surface-alt);
 }
