@@ -107,7 +107,6 @@ function initializeApp() {
     let totalElapsedTime = 0; // 合計経過時間
     let currentBlockIndex = 0; // 現在のブロックのインデックス
     let currentBlockTimeLeft = 0; // 現在のブロックの残り時間
-    let wakeLock = null; // 画面スリープ防止用
 
     // --- データストレージのロジック (localStorage) ---
     const STORAGE_KEY = 'coffee-drip-timer-recipes';
@@ -296,8 +295,30 @@ function initializeApp() {
         updateSummaryLabels();
     }
 
-    // --- タイマーロジック ---
-    let audioContext; // サウンド再生用
+    // --- 画面スリープ & サウンド管理 ---
+    let wakeLock = null; // 画面スリープ防止用
+    const sounds = {
+        countdown: new Audio('audio/countdown.mp3'),
+        stepComplete: new Audio('audio/step_complete.mp3'),
+        timerFinish: new Audio('audio/timer_finish.mp3'),
+        start: new Audio('audio/start.mp3'),
+        pause: new Audio('audio/pause.mp3'),
+        resume: new Audio('audio/resume.mp3'),
+        reset: new Audio('audio/reset.mp3'),
+    };
+
+    // アプリのサウンドを事前に読み込んでおく
+    Object.values(sounds).forEach(sound => {
+        sound.load();
+        sound.volume = 0.5; // アプリ全体の音量を50%に設定
+    });
+
+    function playSound(soundName) {
+        if (sounds[soundName]) {
+            sounds[soundName].currentTime = 0;
+            sounds[soundName].play().catch(e => console.error("サウンドの再生に失敗しました:", e));
+        }
+    }
 
     // 画面スリープを防止する
     async function requestWakeLock() {
@@ -331,20 +352,6 @@ function initializeApp() {
         return `${minutes}:${seconds}`;
     }
 
-    // カウントダウンのビープ音を再生する
-    function playBeep() {
-        if (!audioContext) return;
-        const oscillator = audioContext.createOscillator();
-        const gainNode = audioContext.createGain();
-        oscillator.connect(gainNode);
-        gainNode.connect(audioContext.destination);
-        oscillator.type = 'sine';
-        oscillator.frequency.setValueAtTime(880, audioContext.currentTime); // A5 note
-        gainNode.gain.setValueAtTime(0.1, audioContext.currentTime); // Volume
-        oscillator.start();
-        oscillator.stop(audioContext.currentTime + 0.1);
-    }
-
     // 1秒ごとに実行されるタイマーのメイン処理
     function tick() {
         totalElapsedTime++;
@@ -362,9 +369,9 @@ function initializeApp() {
             currentBlockTimeLeft--;
             domTimer.blockCountdown.textContent = formatTime(currentBlockTimeLeft);
 
-            // 残り5秒からビープ音を鳴らす
+            // 残り5秒からカウントダウン音を鳴らす
             if (currentBlockTimeLeft > 0 && currentBlockTimeLeft <= 5) {
-                playBeep();
+                playSound('countdown');
             }
 
             // 現在のブロックが終了したかチェック
@@ -372,11 +379,13 @@ function initializeApp() {
                 currentBlockIndex++;
                 if (currentBlockIndex < activeRecipe.blocks.length) {
                     // 次のブロックへ
+                    playSound('stepComplete');
                     const nextBlock = activeRecipe.blocks[currentBlockIndex];
                     currentBlockTimeLeft = nextBlock.duration;
                     updateTimerBlockDisplay();
                 } else {
                     // 全てのブロックが終了
+                    playSound('timerFinish');
                     timerState = 'finished';
                     domTimer.blockName.textContent = S.dripEnd;
                     domTimer.blockCountdown.textContent = '';
@@ -388,13 +397,9 @@ function initializeApp() {
     }
 
     function startTimer() {
-        // ユーザー操作をきっかけにAudioContextを初期化
-        if (!audioContext) {
-            audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        }
-
         // 停止状態からの開始
         if (timerState === 'stopped') {
+            playSound('start'); // スタート音
             totalElapsedTime = 0;
             currentBlockIndex = 0;
             const firstBlock = activeRecipe.blocks[0];
@@ -403,6 +408,8 @@ function initializeApp() {
             timerInterval = setInterval(tick, 1000);
             // スリープ防止を開始
             requestWakeLock();
+        } else if (timerState === 'paused') {
+            playSound('resume'); // 再開音
         }
 
         // 実行中は何もしない
@@ -414,6 +421,7 @@ function initializeApp() {
 
     function pauseTimer() {
         if (timerState !== 'running') return;
+        playSound('pause'); // 一時停止音
         timerState = 'paused';
         domTimer.startStopButton.textContent = S.timerResume;
     }
@@ -431,6 +439,7 @@ function initializeApp() {
 
     function resetTimer() {
         if (confirm(S.confirmReset)) {
+            playSound('reset'); // リセット音
             stopTimer();
         }
     }
