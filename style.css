@@ -1,9 +1,31 @@
+/* 色の定義 (CSS変数) */
+:root {
+    --color-primary: #007aff;
+    --color-primary-light: #eef5ff;
+    --color-primary-dark: #005bb5;
+    --color-success: #28a745;
+    --color-danger: #ff3b30;
+    --color-secondary: #8e8e93;
+
+    --color-background: #f0f2f5;
+    --color-surface: #ffffff;
+    --color-surface-hover: #f9f9f9;
+    --color-surface-alt: #f8f8f8;
+
+    --color-text-primary: #333;
+    --color-text-secondary: #666;
+    --color-text-tertiary: #aaa;
+    --color-border: #e5e5e5;
+    --color-border-light: #f0f0f0;
+    --color-border-dashed: #ccc;
+}
+
 /* 基本スタイル */
 body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     margin: 0;
-    background-color: #f0f2f5;
-    color: #333;
+    background-color: var(--color-background);
+    color: var(--color-text-primary);
 }
 
 main {
@@ -14,7 +36,7 @@ main {
 
 /* 画面共通のスタイル */
 .screen {
-    background-color: #fff;
+    background-color: var(--color-surface);
     border-radius: 12px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     margin-bottom: 20px;
@@ -25,16 +47,38 @@ main {
     justify-content: space-between;
     align-items: center;
     padding: 15px 20px;
-    border-bottom: 1px solid #e5e5e5;
+    border-bottom: 1px solid var(--color-border);
+    position: relative;
+}
+
+.screen-header > div {
+    display: flex;
+    gap: 10px;
+}
+
+.header-title-centered {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
 }
 
 .screen-header h1 {
-    font-size: 1.5em;
+    font-size: 1.2em; /* 少し小さくしてバランスを取る */
     margin: 0;
 }
 
 .screen-content {
     padding: 20px;
+}
+
+.screen-content h2 {
+    font-size: 1em;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+    padding-bottom: 8px;
+    border-bottom: 2px solid var(--color-border-light);
+    margin-top: 25px;
+    margin-bottom: 20px;
 }
 
 /* ボタンのスタイル */
@@ -44,11 +88,12 @@ button {
     border-radius: 8px;
     font-size: 1em;
     cursor: pointer;
-    background-color: #007aff;
+    background-color: var(--color-primary);
     color: white;
+    transition: opacity 0.2s ease;
 }
 
-button:hover {
+button:hover, button:focus {
     opacity: 0.8;
 }
 
@@ -57,6 +102,22 @@ button:hover {
     width: 44px;
     height: 44px;
     border-radius: 50%; /* 丸くする */
+}
+
+.btn-icon {
+    background-color: transparent;
+    padding: 0;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-icon svg {
+    width: 24px;
+    height: 24px;
+    fill: var(--color-text-primary);
 }
 
 /* レシピ一覧のスタイル */
@@ -71,7 +132,7 @@ button:hover {
     justify-content: space-between;
     align-items: center;
     padding: 15px;
-    border-bottom: 1px solid #e5e5e5;
+    border-bottom: 1px solid var(--color-border);
     cursor: pointer;
 }
 
@@ -80,14 +141,54 @@ button:hover {
 }
 
 .recipe-item:hover {
-    background-color: #f9f9f9;
+    background-color: var(--color-surface-hover);
+}
+
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+    text-align: center;
+    color: var(--color-text-secondary);
+}
+
+.empty-state svg {
+    width: 64px;
+    height: 64px;
+    stroke-width: 1;
+    color: var(--color-border-dashed);
+    margin-bottom: 15px;
 }
 
 .recipe-item-actions button {
     margin-left: 8px;
     font-size: 0.9em;
     padding: 5px 10px;
-    background-color: #8e8e93;
+    background-color: var(--color-secondary);
+}
+
+.recipe-item-actions .btn-delete {
+    background-color: var(--color-danger);
+}
+
+.recipe-item-actions .btn-edit {
+    background-color: var(--color-success);
+}
+
+/* 設定画面のグループ化 */
+.settings-group {
+    background-color: var(--color-surface-alt);
+    padding: 15px 20px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+}
+
+.settings-group h2 {
+    margin-top: 0;
+    padding-bottom: 0;
+    border-bottom: none;
 }
 
 /* 設定画面のフォーム */
@@ -104,9 +205,17 @@ button:hover {
 .form-group input[type="number"] {
     width: 100%;
     padding: 8px;
-    border: 1px solid #ccc;
+    border: 1px solid var(--color-border-dashed);
     border-radius: 6px;
     box-sizing: border-box; /* paddingを含めてwidthを100%にする */
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.form-group input[type="text"]:focus,
+.form-group input[type="number"]:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.2);
 }
 
 .form-group-horizontal {
@@ -115,7 +224,7 @@ button:hover {
 }
 
 .block-form {
-    border-top: 1px dashed #ccc;
+    border-top: 1px dashed var(--color-border-dashed);
     padding: 15px 0;
     margin-top: 15px;
     display: flex;
@@ -133,7 +242,7 @@ button:hover {
     width: 65px; /* 3桁の数字にちょうど良い幅に固定 */
     flex-shrink: 0;
 }
-.btn-delete-block { background-color: #ff3b30; width: 40px; height: 40px; }
+.btn-delete-block { background-color: var(--color-danger); width: 40px; height: 40px; }
 
 .input-with-unit {
     display: flex;
@@ -142,7 +251,7 @@ button:hover {
 
 .input-with-unit .unit {
     margin-left: 4px;
-    color: #555;
+    color: var(--color-text-secondary);
     font-size: 0.9em;
     white-space: nowrap; /* 単位が改行しないように */
 }
@@ -150,14 +259,14 @@ button:hover {
 .block-comment {
     width: 100%;
     padding: 8px;
-    border: 1px solid #ccc;
+    border: 1px solid var(--color-border-dashed);
     border-radius: 6px;
     box-sizing: border-box;
 }
 
 .recipe-summary {
-    background-color: #eef5ff;
-    color: #005bb5;
+    background-color: var(--color-primary-light);
+    color: var(--color-primary-dark);
     padding: 10px 15px;
     border-radius: 8px;
     margin-bottom: 15px;
@@ -165,13 +274,26 @@ button:hover {
     justify-content: space-around;
 }
 
-.btn-danger { background-color: #ff3b30; }
+.form-actions {
+    margin-top: 20px;
+    display: flex;
+    gap: 10px;
+}
+
+.form-actions #btn-save-recipe {
+    flex-grow: 1; /* 保存ボタンが残りのスペースを全て使う */
+}
+
+.btn-danger { background-color: var(--color-danger); }
+.btn-success { background-color: var(--color-success); }
 
 /* タイマー画面のスタイル */
 .screen-header > .timer-recipe-title {
-    flex-grow: 1;
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 70%; /* 長いタイトルがボタンに重ならないように幅を制限 */
     text-align: center;
-    margin: 0 10px;
 }
 .timer-recipe-title {
     display: flex;
@@ -183,7 +305,7 @@ button:hover {
     justify-content: center;
     gap: 15px;
     font-size: 0.9em;
-    color: #555;
+    color: var(--color-text-secondary);
 }
 .timer-layout {
     display: flex;
@@ -201,12 +323,12 @@ button:hover {
 
 .timer-main-display p {
     margin: 0;
-    color: #888;
+    color: var(--color-text-secondary);
 }
 
 .timer-current-block {
     width: 100%;
-    background-color: #f8f8f8;
+    background-color: var(--color-surface-alt);
     padding: 15px;
     border-radius: 10px;
 }
@@ -219,7 +341,33 @@ button:hover {
 .timer-text-small {
     font-size: 2.5em;
     font-weight: 500;
-    color: #007aff;
+    color: var(--color-primary);
+}
+
+.amount-tracker {
+    margin: 10px 0;
+    padding: 10px;
+    background-color: rgba(0, 0, 0, 0.03);
+    border-radius: 8px;
+}
+.timer-current-block .amount-tracker p {
+    margin: 0;
+}
+#timer-previous-amount {
+    font-size: 1em;
+    color: var(--color-text-secondary);
+    margin-bottom: 4px;
+}
+#timer-step-amount {
+    font-size: 1.2em;
+    font-weight: 500;
+    color: var(--color-text-primary);
+    margin-bottom: 4px;
+}
+#timer-target-amount {
+    font-size: 1.4em;
+    font-weight: 500;
+    color: var(--color-primary);
 }
 
 .timer-current-block p {
@@ -229,7 +377,7 @@ button:hover {
 
 .comment-text {
     font-style: italic;
-    color: #666;
+    color: var(--color-text-secondary);
 }
 
 .timer-controls {
@@ -237,15 +385,113 @@ button:hover {
     justify-content: center;
     align-items: center;
     width: 100%;
-    position: relative;
+    gap: 50px;
 }
 .timer-controls button {
     padding: 15px 40px;
     font-size: 1.2em;
     border-radius: 30px;
 }
-.timer-controls .btn-danger {
-    position: absolute;
-    left: 0;
+.btn-secondary { background-color: var(--color-border); color: var(--color-text-primary); }
+
+.btn-outline {
+    background-color: transparent;
+    color: var(--color-primary);
+    border: 1px solid var(--color-primary);
 }
-.btn-secondary { background-color: #e5e5e5; color: #333; }
+
+.app-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    text-align: center;
+    padding: 10px 20px;
+    font-size: 0.8em;
+    color: var(--color-text-tertiary);
+    border-top: 1px solid var(--color-border-light); /* とても薄い区切り線 */
+}
+
+.btn-link {
+    background: none;
+    border: none;
+    color: var(--color-primary);
+    text-decoration: underline;
+    cursor: pointer;
+    padding: 0;
+    font-size: 1em;
+}
+
+/* モーダルウィンドウのスタイル */
+.modal {
+    position: fixed;
+    z-index: 100;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0,0,0,0.5);
+    display: none; /* デフォルトでは非表示 */
+    align-items: center;
+    justify-content: center;
+}
+
+.modal.is-open {
+    display: flex; /* is-openクラスが付いたら表示 */
+}
+
+.modal-content {
+    background-color: var(--color-surface);
+    margin: auto;
+    padding: 20px;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 500px;
+    position: relative;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+}
+
+.modal-close-btn {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    font-size: 1.8em;
+    font-weight: bold;
+    background: none;
+    color: var(--color-text-tertiary);
+    border: none;
+    padding: 0;
+    line-height: 1;
+}
+
+/* ダークモードの色の定義 */
+body.dark-mode {
+    --color-primary-light: rgba(0, 122, 255, 0.15);
+    --color-primary-dark: #3395ff;
+
+    --color-background: #121212;
+    --color-surface: #1e1e1e;
+    --color-surface-hover: #2a2a2a;
+    --color-surface-alt: #252525;
+
+    --color-text-primary: #e0e0e0;
+    --color-text-secondary: #a0a0a0;
+    --color-text-tertiary: #757575;
+    --color-border: #333333;
+    --color-border-light: #444444;
+    --color-border-dashed: #555555;
+}
+
+/* ダークモード用の個別調整 */
+body.dark-mode .btn-icon svg {
+    fill: var(--color-text-primary);
+}
+
+body.dark-mode .form-group input[type="text"]:focus,
+body.dark-mode .form-group input[type="number"]:focus {
+    box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.3);
+}
+
+body.dark-mode .modal-content {
+    box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+}

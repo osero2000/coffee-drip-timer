@@ -1,4 +1,5 @@
 // --- 国際化対応 (i18n) の準備 ---
+const APP_VERSION = '1.0.0';
 // アプリ内で使う全ての文字列をここにまとめる
 const STRINGS = {
     ja: {
@@ -6,15 +7,24 @@ const STRINGS = {
         alertRecipeName: 'レシピ名を入力してください。',
         alertBeanAmount: '豆の量を入力してください。',
         alertDuplicateRecipe: '同じ名前のレシピが既に存在します。別の名前を付けてください。',
-        alertInvalidBlock: 'すべての手順に、有効な名前、時間(1秒以上)、目標量(1g以上)を入力してください。',
+        alertInvalidBlock: 'すべての手順に、有効な名前、時間(1秒以上)、目標量(0g以上)を入力してください。',
         alertInvalidTemp: '温度には数値を入力してください。',
         alertNoBlocks: 'ドリップ手順を1つ以上追加してください。',
         alertRecipeSaved: 'レシピを保存しました！',
         alertRecipeUpdated: 'レシピを更新しました！',
+        // プレースホルダー
+        placeholderRecipeName: '例: 朝の一杯用',
+        placeholderBeanAmount: '例: 20',
+        placeholderBlockName: '手順名 (例: 蒸らし)',
+        placeholderDuration: '時間',
+        placeholderAmount: '目標量',
+        placeholderTemp: '温度',
+        placeholderComment: 'コメント (例: ゆっくりのの字で)',
         confirmDelete: 'このレシピを本当に削除しますか？',
         // UIテキスト
         newRecipeTitle: '新しいレシピ',
         editRecipeTitle: 'レシピを編集',
+        mainTitle: 'コーヒータイマー',
         noRecipes: 'まだレシピがありません。最初のレシピを登録しましょう！',
         pourLabel: '投湯量',
         extractionLabel: '抽出量',
@@ -22,10 +32,15 @@ const STRINGS = {
         timerStop: 'ストップ',
         timerResume: '再開',
         dripFinish: 'ドリップ完了！お疲れ様でした！',
+        timerCurrentAmount: '現在',
+        timerTargetAmount: '目標量',
         temperatureLabel: '温度',
         dripEnd: '終わり',
         timerFinish: '終了',
+        lastStepInfo: '最後の工程です',
+        timerTotalTimeLabel: '目標時間',
         confirmReset: 'タイマーをリセットしますか？',
+        alertTimerStopped: 'タイマーが29分59秒に達したため、自動的に停止しました。',
     },
     // 将来ここに en: { ... } を追加すれば英語対応できる
 };
@@ -34,6 +49,12 @@ const S = STRINGS.ja; // 現在の言語を 'ja' に設定
 // アプリの初期化処理をまとめる
 function initializeApp() {
     console.log("コーヒードリップタイマー、起動！");
+
+    // --- UIテキストの初期設定 ---
+    document.getElementById('main-title').textContent = S.mainTitle;
+    document.getElementById('recipe-name').placeholder = S.placeholderRecipeName;
+    document.getElementById('bean-amount').placeholder = S.placeholderBeanAmount;
+    document.getElementById('app-version-display').textContent = `v${APP_VERSION}`;
 
     // --- DOM要素の取得 ---
     // 画面のセクション
@@ -53,6 +74,10 @@ function initializeApp() {
         timerReset: document.getElementById('btn-timer-reset'),
         timerStartStop: document.getElementById('btn-timer-start-stop'),
         cancelSettings: document.getElementById('btn-cancel-settings'),
+        toggleSound: document.getElementById('btn-toggle-sound'),
+        toggleTheme: document.getElementById('btn-toggle-theme'),
+        showCredits: document.getElementById('btn-show-credits'),
+        closeModal: document.getElementById('modal-close'),
     };
 
     // コンテナ
@@ -60,6 +85,7 @@ function initializeApp() {
         recipeList: document.getElementById('recipe-list-container'),
         settingsForm: document.getElementById('screen-recipe-settings'), // イベントリスナー用
         blocks: document.getElementById('blocks-container'),
+        creditsModal: document.getElementById('credits-modal'),
     };
 
     // タイマー画面のDOM要素をキャッシュ
@@ -72,6 +98,8 @@ function initializeApp() {
         blockName: document.getElementById('timer-current-block-name'),
         blockCountdown: document.getElementById('timer-block-countdown'),
         targetAmount: document.getElementById('timer-target-amount'),
+        previousAmount: document.getElementById('timer-previous-amount'),
+        stepAmount: document.getElementById('timer-step-amount'),
         blockComment: document.getElementById('timer-block-comment'),
         currentBlockTemp: document.getElementById('timer-current-block-temp'),
         nextBlockInfo: document.getElementById('timer-next-block-info'),
@@ -86,7 +114,8 @@ function initializeApp() {
     let totalElapsedTime = 0; // 合計経過時間
     let currentBlockIndex = 0; // 現在のブロックのインデックス
     let currentBlockTimeLeft = 0; // 現在のブロックの残り時間
-    let wakeLock = null; // 画面スリープ防止用
+    let isSoundEnabled = true; // サウンドが有効かどうかのフラグ
+    let currentTheme = 'light'; // 'light' or 'dark'
 
     // --- データストレージのロジック (localStorage) ---
     const STORAGE_KEY = 'coffee-drip-timer-recipes';
@@ -130,22 +159,22 @@ function initializeApp() {
 
         newBlock.innerHTML = `
             <div class="form-group-inline">
-                <input type="text" class="block-name" placeholder="手順名 (例: 蒸らし)" value="${block.name || ''}">
+                <input type="text" class="block-name" placeholder="${S.placeholderBlockName}" value="${block.name || ''}">
                 <div class="input-with-unit">
-                    <input type="number" class="block-duration" placeholder="時間" value="${block.duration || ''}" min="1">
+                    <input type="number" class="block-duration" placeholder="${S.placeholderDuration}" value="${block.duration || ''}" min="1">
                     <span class="unit">秒</span>
                 </div>
                 <div class="input-with-unit">
-                    <input type="number" class="block-amount" placeholder="目標量" value="${block.targetAmount || ''}" min="1" step="${weightStep}">
+                    <input type="number" class="block-amount" placeholder="${S.placeholderAmount}" value="${block.targetAmount || ''}" min="0" step="${weightStep}">
                     <span class="unit weight-unit-label">${weightUnit}</span>
                 </div>
                 <div class="input-with-unit">
-                    <input type="number" class="block-temp" placeholder="温度" max="${maxTemp}" value="${block.temperature === null ? '' : (block.temperature || maxTemp)}">
+                    <input type="number" class="block-temp" placeholder="${S.placeholderTemp}" max="${maxTemp}" value="${block.temperature === null ? '' : (block.temperature || maxTemp)}">
                     <span class="unit temp-unit-label">${tempUnitLabel}</span>
                 </div>
                 <button class="btn-delete-block" data-target-id="${blockId}">×</button>
             </div>
-            <input type="text" class="block-comment" placeholder="コメント (例: ドリッパーを振る)" value="${block.comment || ''}">
+            <input type="text" class="block-comment" placeholder="${S.placeholderComment}" value="${block.comment || ''}">
         `;
         containers.blocks.appendChild(newBlock);
         newBlock.querySelector('.block-name').focus(); // 新しい手順名にフォーカス
@@ -224,7 +253,7 @@ function initializeApp() {
 
         const weightUnit = document.querySelector('input[name="weight-unit"]:checked').value;
         // ozの時は小数点第1位まで表示、gの時は整数で表示
-        const displayAmount = weightUnit === 'oz' ? totalAmount.toFixed(1) : Math.round(totalAmount);
+        const displayAmount = formatWeight(totalAmount, weightUnit);
         const minutes = Math.floor(totalDuration / 60);
         const seconds = totalDuration % 60;
 
@@ -263,7 +292,7 @@ function initializeApp() {
             // フォーム表示用に、ステップごとの投入量を持つ新しいオブジェクトを作成
             const blockForForm = {
                 ...block,
-                targetAmount: weightUnit === 'oz' ? parseFloat(stepAmount.toFixed(1)) : Math.round(stepAmount),
+                targetAmount: formatWeight(stepAmount, weightUnit),
             };
             addBlockForm(blockForForm);
             lastAmount = block.targetAmount; // 次の計算のために今回の累計量を保存
@@ -275,8 +304,79 @@ function initializeApp() {
         updateSummaryLabels();
     }
 
-    // --- タイマーロジック ---
-    let audioContext; // サウンド再生用
+    // --- 画面スリープ & サウンド管理 ---
+    let wakeLock = null; // 画面スリープ防止用
+    const THEME_STORAGE_KEY = 'coffee-drip-timer-theme';
+    const SOUND_STORAGE_KEY = 'coffee-drip-timer-sound-enabled';
+    const sounds = {
+        countdown: new Audio('audio/countdown.mp3'),
+        stepComplete: new Audio('audio/step_complete.mp3'),
+        timerFinish: new Audio('audio/timer_finish.mp3'),
+        start: new Audio('audio/start.mp3'),
+        pause: new Audio('audio/pause.mp3'),
+        resume: new Audio('audio/resume.mp3'),
+        reset: new Audio('audio/reset.mp3'),
+    };
+
+    // アプリのサウンドを事前に読み込んでおく
+    Object.values(sounds).forEach(sound => {
+        sound.load();
+        sound.volume = 0.5; // アプリ全体の音量を50%に設定
+    });
+
+    function playSound(soundName) {
+        if (!isSoundEnabled) return; // サウンドがオフなら何もしない
+        if (sounds[soundName]) {
+            sounds[soundName].currentTime = 0;
+            sounds[soundName].play().catch(e => console.error("サウンドの再生に失敗しました:", e));
+        }
+    }
+
+    // サウンドボタンのアイコンを更新する
+    function updateSoundButtonIcon() {
+        const iconOn = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"></path></svg>`;
+        const iconOff = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"></path></svg>`;
+        buttons.toggleSound.innerHTML = isSoundEnabled ? iconOn : iconOff;
+    }
+
+    // サウンド設定を切り替える
+    function toggleSound() {
+        isSoundEnabled = !isSoundEnabled;
+        localStorage.setItem(SOUND_STORAGE_KEY, isSoundEnabled);
+        updateSoundButtonIcon();
+    }
+
+    // テーマボタンのアイコンを更新する
+    function updateThemeButtonIcon() {
+        const sunIcon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zM2 13h2c.55 0 1-.45 1-1s-.45-1-1-1H2c-.55 0-1 .45-1 1s.45 1 1 1zm18 0h2c.55 0 1-.45 1-1s-.45-1-1-1h-2c-.55 0-1 .45-1 1s.45 1 1 1zM11 2v2c0 .55.45 1 1 1s1-.45 1-1V2c0-.55-.45-1-1-1s-1 .45-1 1zm0 18v2c0 .55.45 1 1 1s1-.45 1-1v-2c0-.55-.45-1-1-1s-1 .45-1 1zM5.64 5.64c.39.39 1.02.39 1.41 0s.39-1.02 0-1.41L5.64 4.22c-.39-.39-1.02-.39-1.41 0s-.39 1.02 0 1.41l1.41 1.41zm12.73 12.73c.39.39 1.02.39 1.41 0s.39-1.02 0-1.41l-1.41-1.41c-.39-.39-1.02-.39-1.41 0s-.39 1.02 0 1.41l1.41 1.41zM4.22 18.36c.39.39 1.02.39 1.41 0s.39-1.02 0-1.41l-1.41-1.41c-.39-.39-1.02-.39-1.41 0s-.39 1.02 0 1.41l1.41 1.41zm14.14-14.14c.39.39 1.02.39 1.41 0s.39-1.02 0-1.41l-1.41-1.41c-.39-.39-1.02-.39-1.41 0s-.39 1.02 0 1.41l1.41 1.41z"></path></svg>`;
+        const moonIcon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12.3 4.9c.4-.2.6-.7.4-1.1-.2-.4-.7-.6-1.1-.4-3.8.9-6.6 4.3-6.6 8.5 0 4.8 3.9 8.8 8.8 8.8 3.6 0 6.8-2.2 8.1-5.4.2-.4 0-.9-.4-1.1-.4-.2-.9 0-1.1.4-1 2.5-3.5 4.2-6.5 4.2-3.9 0-7-3.1-7-7 0-3.5 2.5-6.4 5.9-6.9z"></path></svg>`;
+        buttons.toggleTheme.innerHTML = currentTheme === 'light' ? moonIcon : sunIcon;
+    }
+
+    // テーマ設定を切り替える
+    function toggleTheme() {
+        currentTheme = currentTheme === 'light' ? 'dark' : 'light';
+        document.body.classList.toggle('dark-mode');
+        localStorage.setItem(THEME_STORAGE_KEY, currentTheme);
+        updateThemeButtonIcon();
+    }
+
+    // アプリ起動時にテーマ設定を読み込む
+    function loadThemeSetting() {
+        const savedTheme = localStorage.getItem(THEME_STORAGE_KEY) || 'light';
+        currentTheme = savedTheme;
+        if (currentTheme === 'dark') {
+            document.body.classList.add('dark-mode');
+        }
+        updateThemeButtonIcon();
+    }
+
+    // アプリ起動時にサウンド設定を読み込む
+    function loadSoundSetting() {
+        const savedSetting = localStorage.getItem(SOUND_STORAGE_KEY);
+        isSoundEnabled = savedSetting === null ? true : JSON.parse(savedSetting);
+        updateSoundButtonIcon();
+    }
 
     // 画面スリープを防止する
     async function requestWakeLock() {
@@ -310,18 +410,12 @@ function initializeApp() {
         return `${minutes}:${seconds}`;
     }
 
-    // カウントダウンのビープ音を再生する
-    function playBeep() {
-        if (!audioContext) return;
-        const oscillator = audioContext.createOscillator();
-        const gainNode = audioContext.createGain();
-        oscillator.connect(gainNode);
-        gainNode.connect(audioContext.destination);
-        oscillator.type = 'sine';
-        oscillator.frequency.setValueAtTime(880, audioContext.currentTime); // A5 note
-        gainNode.gain.setValueAtTime(0.1, audioContext.currentTime); // Volume
-        oscillator.start();
-        oscillator.stop(audioContext.currentTime + 0.1);
+    // 重量を単位に合わせてフォーマットする（ozは小数点第1位、gは整数）
+    function formatWeight(amount, unit) {
+        if (unit === 'oz') {
+            return parseFloat(amount.toFixed(1));
+        }
+        return Math.round(amount);
     }
 
     // 1秒ごとに実行されるタイマーのメイン処理
@@ -329,14 +423,21 @@ function initializeApp() {
         totalElapsedTime++;
         domTimer.totalTime.textContent = formatTime(totalElapsedTime);
 
+        // 安全装置: 29分59秒（1799秒）で強制停止
+        if (totalElapsedTime >= 1799) {
+            stopTimer();
+            alert(S.alertTimerStopped);
+            return;
+        }
+
         // タイマーが実行中の場合のみ、ブロックの時間を減らす
         if (timerState === 'running') {
             currentBlockTimeLeft--;
             domTimer.blockCountdown.textContent = formatTime(currentBlockTimeLeft);
 
-            // 残り5秒からビープ音を鳴らす
+            // 残り5秒からカウントダウン音を鳴らす
             if (currentBlockTimeLeft > 0 && currentBlockTimeLeft <= 5) {
-                playBeep();
+                playSound('countdown');
             }
 
             // 現在のブロックが終了したかチェック
@@ -344,28 +445,27 @@ function initializeApp() {
                 currentBlockIndex++;
                 if (currentBlockIndex < activeRecipe.blocks.length) {
                     // 次のブロックへ
+                    playSound('stepComplete');
                     const nextBlock = activeRecipe.blocks[currentBlockIndex];
                     currentBlockTimeLeft = nextBlock.duration;
                     updateTimerBlockDisplay();
                 } else {
                     // 全てのブロックが終了
+                    playSound('timerFinish');
                     timerState = 'finished';
                     domTimer.blockName.textContent = S.dripEnd;
                     domTimer.blockCountdown.textContent = '';
                     domTimer.startStopButton.textContent = S.timerFinish;
+                    domTimer.nextBlockInfo.textContent = S.dripFinish;
                 }
             }
         }
     }
 
     function startTimer() {
-        // ユーザー操作をきっかけにAudioContextを初期化
-        if (!audioContext) {
-            audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        }
-
         // 停止状態からの開始
         if (timerState === 'stopped') {
+            playSound('start'); // スタート音
             totalElapsedTime = 0;
             currentBlockIndex = 0;
             const firstBlock = activeRecipe.blocks[0];
@@ -374,6 +474,8 @@ function initializeApp() {
             timerInterval = setInterval(tick, 1000);
             // スリープ防止を開始
             requestWakeLock();
+        } else if (timerState === 'paused') {
+            playSound('resume'); // 再開音
         }
 
         // 実行中は何もしない
@@ -385,11 +487,12 @@ function initializeApp() {
 
     function pauseTimer() {
         if (timerState !== 'running') return;
+        playSound('pause'); // 一時停止音
         timerState = 'paused';
         domTimer.startStopButton.textContent = S.timerResume;
     }
 
-    function stopTimer() {
+    function stopTimer(shouldResetDisplay = true) {
         // スリープ防止を解除
         releaseWakeLock();
 
@@ -397,11 +500,14 @@ function initializeApp() {
         domTimer.startStopButton.textContent = S.timerStart;
         clearInterval(timerInterval);
         timerInterval = null;
-        renderTimerScreen(); // タイマー表示を初期状態に戻す
+        if (shouldResetDisplay) {
+            renderTimerScreen(); // タイマー表示を初期状態に戻す
+        }
     }
 
     function resetTimer() {
         if (confirm(S.confirmReset)) {
+            playSound('reset'); // リセット音
             stopTimer();
         }
     }
@@ -411,9 +517,9 @@ function initializeApp() {
         if (!activeRecipe) return;
         const block = activeRecipe.blocks[currentBlockIndex];
         if (!block) return; // レシピの最後に到達した場合など
+        const prevBlock = currentBlockIndex > 0 ? activeRecipe.blocks[currentBlockIndex - 1] : null;
         const nextBlock = activeRecipe.blocks[currentBlockIndex + 1];
 
-        const typeLabel = activeRecipe.type === 'pour' ? S.pourLabel : S.extractionLabel;
         const weightUnit = activeRecipe.weightUnit || 'g';
         const tempUnit = activeRecipe.tempUnit || 'celsius';
         const tempUnitLabel = tempUnit === 'celsius' ? '℃' : '℉';
@@ -421,15 +527,28 @@ function initializeApp() {
         // 現在のブロック情報を更新
         domTimer.blockName.textContent = block.name;
         domTimer.blockCountdown.textContent = formatTime(block.duration);
-        const displayTargetAmount = weightUnit === 'oz' ? block.targetAmount.toFixed(1) : Math.round(block.targetAmount);
-        domTimer.targetAmount.textContent = `${typeLabel}: ${displayTargetAmount}${weightUnit}`;
+
+        // 累計量の表示を更新
+        const stepLabel = activeRecipe.type === 'pour' ? S.pourLabel : S.extractionLabel;
+        const previousAmount = prevBlock ? prevBlock.targetAmount : 0;
+        const stepAmount = block.targetAmount - previousAmount;
+        const displayPreviousAmount = formatWeight(previousAmount, weightUnit);
+        const displayStepAmount = formatWeight(stepAmount, weightUnit);
+        const displayTargetAmount = formatWeight(block.targetAmount, weightUnit);
+        domTimer.previousAmount.textContent = `${S.timerCurrentAmount}: ${displayPreviousAmount}${weightUnit}`;
+        domTimer.stepAmount.textContent = `${stepLabel}: ${displayStepAmount}${weightUnit}`;
+        domTimer.targetAmount.textContent = `${S.timerTargetAmount}: ${displayTargetAmount}${weightUnit}`;
         domTimer.blockComment.textContent = block.comment || '';
         domTimer.currentBlockTemp.textContent = block.temperature ? `${S.temperatureLabel}: ${block.temperature}${tempUnitLabel}` : '';
 
         // 次のブロック情報を更新
         if (nextBlock) {
-            const nextTargetAmount = weightUnit === 'oz' ? nextBlock.targetAmount.toFixed(1) : Math.round(nextBlock.targetAmount);
-            let nextInfo = `${nextBlock.name} (${nextBlock.duration}秒 / ${nextTargetAmount}${weightUnit})`;
+            // 次の手順で投入する量を計算 (次の手順の累計量 - 現在の手順の累計量)
+            const currentCumulativeAmount = block.targetAmount;
+            const nextStepAmount = nextBlock.targetAmount - currentCumulativeAmount;
+            const displayNextStepAmount = formatWeight(nextStepAmount, weightUnit);
+
+            let nextInfo = `${nextBlock.name} (${nextBlock.duration}秒 / ${displayNextStepAmount}${weightUnit})`;
             if (nextBlock.temperature) {
                 nextInfo += ` / ${nextBlock.temperature}${tempUnitLabel}`;
             }
@@ -438,7 +557,7 @@ function initializeApp() {
             }
             domTimer.nextBlockInfo.textContent = nextInfo;
         } else {
-            domTimer.nextBlockInfo.textContent = '最後の工程です';
+            domTimer.nextBlockInfo.textContent = S.lastStepInfo;
         }
     }
 
@@ -460,14 +579,14 @@ function initializeApp() {
         const weightUnit = activeRecipe.weightUnit || 'g';
         const totalRecipeDuration = activeRecipe.blocks.reduce((sum, block) => sum + block.duration, 0);
         const totalRecipeAmount = activeRecipe.blocks.length > 0 ? activeRecipe.blocks[activeRecipe.blocks.length - 1].targetAmount : 0;
-        const displayAmount = weightUnit === 'oz' ? totalRecipeAmount.toFixed(1) : Math.round(totalRecipeAmount);
+        const displayAmount = formatWeight(totalRecipeAmount, weightUnit);
         const typeLabel = activeRecipe.type === 'pour' ? S.pourLabel : S.extractionLabel;
         const totalLabel = `総${typeLabel}`;
 
         // タイトル部の表示を更新
         domTimer.recipeName.textContent = activeRecipe.name;
         domTimer.beanAmount.textContent = `豆: ${activeRecipe.beanAmount}${weightUnit}`;
-        domTimer.totalRecipeTime.textContent = `時間: ${formatTime(totalRecipeDuration)}`;
+        domTimer.totalRecipeTime.textContent = `${S.timerTotalTimeLabel}: ${formatTime(totalRecipeDuration)}`;
         domTimer.totalRecipeAmount.textContent = `${totalLabel}: ${displayAmount}${weightUnit}`;
 
         // 合計時間を0にリセット
@@ -485,7 +604,12 @@ function initializeApp() {
         containers.recipeList.innerHTML = '';
 
         if (recipes.length === 0) {
-            containers.recipeList.innerHTML = `<p>${S.noRecipes}</p>`;
+            containers.recipeList.innerHTML = `
+                <div class="empty-state">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"></path><path d="M2 8h14v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"></path><line x1="6" y1="1" x2="6" y2="4"></line><line x1="10" y1="1" x2="10" y2="4"></line><line x1="14" y1="1" x2="14" y2="4"></line></svg>
+                    <p>${S.noRecipes}</p>
+                </div>
+            `;
             return;
         }
 
@@ -494,9 +618,10 @@ function initializeApp() {
             li.className = 'recipe-item';
             li.dataset.recipeId = recipe.id;
             const typeLabel = recipe.type === 'pour' ? S.pourLabel : S.extractionLabel;
+            const weightUnit = recipe.weightUnit || 'g';
 
             li.innerHTML = `
-                <span>${recipe.name} (${recipe.beanAmount}g) [${typeLabel}]</span>
+                <span>${recipe.name} (${recipe.beanAmount}${weightUnit}) [${typeLabel}]</span>
                 <div class="recipe-item-actions">
                     <button class="btn-edit">編集</button>
                     <button class="btn-delete">削除</button>
@@ -550,14 +675,22 @@ function initializeApp() {
             const duration = parseInt(form.querySelector('.block-duration').value, 10);
             const amount = parseFloat(form.querySelector('.block-amount').value);
             const tempInput = form.querySelector('.block-temp').value;
-            const temperature = tempInput ? parseInt(tempInput, 10) : null;
+            let temperature = tempInput ? parseInt(tempInput, 10) : null;
             const comment = form.querySelector('.block-comment').value.trim();
 
             // 内部データとしては、累計量を計算して保存する
             cumulativeAmount += amount;
 
+            // 温度が最大値の場合、温度管理なし（null）として扱う
+            if (
+                (tempUnit === 'celsius' && temperature === 100) ||
+                (tempUnit === 'fahrenheit' && temperature === 212)
+            ) {
+                temperature = null;
+            }
+
             // 入力値が有効かチェック
-            if (!name || isNaN(duration) || duration <= 0 || isNaN(amount) || amount <= 0) {
+            if (!name || isNaN(duration) || duration <= 0 || isNaN(amount) || amount < 0) {
                 alert(S.alertInvalidBlock);
                 form.querySelector('.block-name').focus(); // 問題のあったフォームにフォーカス
                 return;
@@ -642,6 +775,22 @@ function initializeApp() {
     // 「保存」ボタンを押したら、レシピを保存
     buttons.saveRecipe.addEventListener('click', saveCurrentRecipe);
 
+    // --- モーダル関連のイベントリスナー ---
+    // 「サウンドクレジット」ボタンを押したらモーダルを表示
+    buttons.showCredits.addEventListener('click', () => {
+        containers.creditsModal.classList.add('is-open');
+    });
+    // モーダルの閉じるボタン
+    buttons.closeModal.addEventListener('click', () => {
+        containers.creditsModal.classList.remove('is-open');
+    });
+
+    // サウンド切り替えボタン
+    buttons.toggleSound.addEventListener('click', toggleSound);
+
+    // テーマ切り替えボタン
+    buttons.toggleTheme.addEventListener('click', toggleTheme);
+
     // タイマーのリセットボタン
     buttons.timerReset.addEventListener('click', resetTimer);
 
@@ -650,7 +799,7 @@ function initializeApp() {
         if (timerState === 'running') {
             pauseTimer();
         } else if (timerState === 'finished') {
-            stopTimer();
+            stopTimer(false); // 画面表示はリセットしない
         } else {
             startTimer();
         }
@@ -717,6 +866,13 @@ function initializeApp() {
         }
     });
 
+    // モーダルの外側をクリックしても閉じるようにする
+    containers.creditsModal.addEventListener('click', (event) => {
+        if (event.target === containers.creditsModal) {
+            containers.creditsModal.classList.remove('is-open');
+        }
+    });
+
     // アプリ起動時にレシピ一覧を初回描画
     renderRecipeList();
 
@@ -725,6 +881,12 @@ function initializeApp() {
 
     // アプリ起動時にサマリーのラベルを初期化
     updateSummaryLabels();
+
+    // アプリ起動時にサウンド設定を読み込んでボタンに反映
+    loadSoundSetting();
+
+    // アプリ起動時にテーマ設定を読み込んでボタンに反映
+    loadThemeSetting();
 }
 
 // DOMの読み込みが完了したらアプリを初期化
