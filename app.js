@@ -253,7 +253,7 @@ function initializeApp() {
 
         const weightUnit = document.querySelector('input[name="weight-unit"]:checked').value;
         // ozの時は小数点第1位まで表示、gの時は整数で表示
-        const displayAmount = weightUnit === 'oz' ? totalAmount.toFixed(1) : Math.round(totalAmount);
+        const displayAmount = formatWeight(totalAmount, weightUnit);
         const minutes = Math.floor(totalDuration / 60);
         const seconds = totalDuration % 60;
 
@@ -292,7 +292,7 @@ function initializeApp() {
             // フォーム表示用に、ステップごとの投入量を持つ新しいオブジェクトを作成
             const blockForForm = {
                 ...block,
-                targetAmount: weightUnit === 'oz' ? parseFloat(stepAmount.toFixed(1)) : Math.round(stepAmount),
+                targetAmount: formatWeight(stepAmount, weightUnit),
             };
             addBlockForm(blockForForm);
             lastAmount = block.targetAmount; // 次の計算のために今回の累計量を保存
@@ -410,6 +410,14 @@ function initializeApp() {
         return `${minutes}:${seconds}`;
     }
 
+    // 重量を単位に合わせてフォーマットする（ozは小数点第1位、gは整数）
+    function formatWeight(amount, unit) {
+        if (unit === 'oz') {
+            return parseFloat(amount.toFixed(1));
+        }
+        return Math.round(amount);
+    }
+
     // 1秒ごとに実行されるタイマーのメイン処理
     function tick() {
         totalElapsedTime++;
@@ -524,9 +532,9 @@ function initializeApp() {
         const stepLabel = activeRecipe.type === 'pour' ? S.pourLabel : S.extractionLabel;
         const previousAmount = prevBlock ? prevBlock.targetAmount : 0;
         const stepAmount = block.targetAmount - previousAmount;
-        const displayPreviousAmount = weightUnit === 'oz' ? previousAmount.toFixed(1) : Math.round(previousAmount);
-        const displayStepAmount = weightUnit === 'oz' ? stepAmount.toFixed(1) : Math.round(stepAmount);
-        const displayTargetAmount = weightUnit === 'oz' ? block.targetAmount.toFixed(1) : Math.round(block.targetAmount);
+        const displayPreviousAmount = formatWeight(previousAmount, weightUnit);
+        const displayStepAmount = formatWeight(stepAmount, weightUnit);
+        const displayTargetAmount = formatWeight(block.targetAmount, weightUnit);
         domTimer.previousAmount.textContent = `${S.timerCurrentAmount}: ${displayPreviousAmount}${weightUnit}`;
         domTimer.stepAmount.textContent = `${stepLabel}: ${displayStepAmount}${weightUnit}`;
         domTimer.targetAmount.textContent = `${S.timerTargetAmount}: ${displayTargetAmount}${weightUnit}`;
@@ -538,7 +546,7 @@ function initializeApp() {
             // 次の手順で投入する量を計算 (次の手順の累計量 - 現在の手順の累計量)
             const currentCumulativeAmount = block.targetAmount;
             const nextStepAmount = nextBlock.targetAmount - currentCumulativeAmount;
-            const displayNextStepAmount = weightUnit === 'oz' ? nextStepAmount.toFixed(1) : Math.round(nextStepAmount);
+            const displayNextStepAmount = formatWeight(nextStepAmount, weightUnit);
 
             let nextInfo = `${nextBlock.name} (${nextBlock.duration}秒 / ${displayNextStepAmount}${weightUnit})`;
             if (nextBlock.temperature) {
@@ -571,7 +579,7 @@ function initializeApp() {
         const weightUnit = activeRecipe.weightUnit || 'g';
         const totalRecipeDuration = activeRecipe.blocks.reduce((sum, block) => sum + block.duration, 0);
         const totalRecipeAmount = activeRecipe.blocks.length > 0 ? activeRecipe.blocks[activeRecipe.blocks.length - 1].targetAmount : 0;
-        const displayAmount = weightUnit === 'oz' ? totalRecipeAmount.toFixed(1) : Math.round(totalRecipeAmount);
+        const displayAmount = formatWeight(totalRecipeAmount, weightUnit);
         const typeLabel = activeRecipe.type === 'pour' ? S.pourLabel : S.extractionLabel;
         const totalLabel = `総${typeLabel}`;
 
