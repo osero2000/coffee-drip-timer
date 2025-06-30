@@ -1,5 +1,5 @@
 // --- 国際化対応 (i18n) の準備 ---
-const APP_VERSION = '1.2.5';
+const APP_VERSION = '1.2.6';
 // アプリ内で使う全ての文字列をここにまとめる
 const STRINGS = {
     ja: {
@@ -312,7 +312,7 @@ function initializeApp() {
     // Web Audio APIのセットアップ
     let audioContext = null;
     const soundBuffers = {};
-    let isAudioInitialized = false;
+    let audioInitPromise = null; // オーディオ初期化処理のPromiseを保持する
 
     const soundUrls = {
         countdown: 'audio/countdown.mp3',
@@ -325,32 +325,39 @@ function initializeApp() {
     };
 
     // AudioContextを初期化し、サウンドを読み込む関数
-    async function initAudio() {
-        if (isAudioInitialized || audioContext) return;
-
-        // ユーザー操作をきっかけにAudioContextを生成
-        audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        if (!audioContext) {
-            console.error("Web Audio APIはこのブラウザではサポートされていません。");
-            return;
+    function initAudio() {
+        // 既に初期化処理が開始されている場合は、そのPromiseを返す
+        if (audioInitPromise) {
+            return audioInitPromise;
         }
-        isAudioInitialized = true;
-        console.log("AudioContextが初期化されました。サウンドを読み込みます...");
 
-        // すべてのオーディオファイルを非同期で読み込む
-        const loadPromises = Object.entries(soundUrls).map(async ([name, url]) => {
-            try {
-                const response = await fetch(url);
-                const arrayBuffer = await response.arrayBuffer();
-                const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
-                soundBuffers[name] = audioBuffer;
-            } catch (error) {
-                console.error(`サウンドの読み込みに失敗しました ${name}:`, error);
+        // 初期化処理を開始し、そのPromiseを保存する
+        audioInitPromise = (async () => {
+            // ユーザー操作をきっかけにAudioContextを生成
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            if (!audioContext) {
+                console.error("Web Audio APIはこのブラウザではサポートされていません。");
+                return;
             }
-        });
+            console.log("AudioContextが初期化されました。サウンドを読み込みます...");
 
-        await Promise.all(loadPromises);
-        console.log("すべてのサウンドの読み込みが完了しました。");
+            // すべてのオーディオファイルを非同期で読み込む
+            const loadPromises = Object.entries(soundUrls).map(async ([name, url]) => {
+                try {
+                    const response = await fetch(url);
+                    const arrayBuffer = await response.arrayBuffer();
+                    const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+                    soundBuffers[name] = audioBuffer;
+                } catch (error) {
+                    console.error(`サウンドの読み込みに失敗しました ${name}:`, error);
+                }
+            });
+
+            await Promise.all(loadPromises);
+            console.log("すべてのサウンドの読み込みが完了しました。");
+        })();
+
+        return audioInitPromise;
     }
 
     // サウンドボタンのアイコンを更新する
@@ -503,11 +510,10 @@ function initializeApp() {
         }
     }
 
-    function startTimer() {
-        // 初回のスタート時にオーディオを初期化
-        if (!isAudioInitialized) {
-            initAudio();
-        }
+    async function startTimer() {
+        // サウンドの初期化が完了するのを待つ
+        // (initAudioはPromiseを返すので、2回目以降の呼び出しでも問題ない)
+        await initAudio();
 
         // 停止状態からの開始
         if (timerState === 'stopped') {
@@ -609,6 +615,9 @@ function initializeApp() {
 
     // ドリップを開始するためにタイマー画面を準備する
     function startDrip(recipeId) {
+        // オーディオの読み込みをバックグラウンドで開始
+        initAudio();
+
         if (timerState !== 'stopped') {
             stopTimer();
         }
