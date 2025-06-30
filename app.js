@@ -1,4 +1,5 @@
 // --- 国際化対応 (i18n) の準備 ---
+const APP_VERSION = '1.0.0β';
 // アプリ内で使う全ての文字列をここにまとめる
 const STRINGS = {
     ja: {
@@ -53,6 +54,7 @@ function initializeApp() {
     document.getElementById('main-title').textContent = S.mainTitle;
     document.getElementById('recipe-name').placeholder = S.placeholderRecipeName;
     document.getElementById('bean-amount').placeholder = S.placeholderBeanAmount;
+    document.getElementById('app-version-display').textContent = `Version ${APP_VERSION}`;
 
     // --- DOM要素の取得 ---
     // 画面のセクション
