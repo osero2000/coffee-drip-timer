@@ -194,6 +194,7 @@ button:hover {
 }
 
 .btn-danger { background-color: #ff3b30; }
+.btn-success { background-color: #28a745; }
 
 /* タイマー画面のスタイル */
 .screen-header > .timer-recipe-title {

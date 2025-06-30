@@ -15,6 +15,7 @@ const STRINGS = {
         // UIテキスト
         newRecipeTitle: '新しいレシピ',
         editRecipeTitle: 'レシピを編集',
+        mainTitle: 'コーヒータイマー',
         noRecipes: 'まだレシピがありません。最初のレシピを登録しましょう！',
         pourLabel: '投湯量',
         extractionLabel: '抽出量',
@@ -26,6 +27,7 @@ const STRINGS = {
         dripEnd: '終わり',
         timerFinish: '終了',
         confirmReset: 'タイマーをリセットしますか？',
+        alertTimerStopped: 'タイマーが29分59秒に達したため、自動的に停止しました。',
     },
     // 将来ここに en: { ... } を追加すれば英語対応できる
 };
@@ -34,6 +36,9 @@ const S = STRINGS.ja; // 現在の言語を 'ja' に設定
 // アプリの初期化処理をまとめる
 function initializeApp() {
     console.log("コーヒードリップタイマー、起動！");
+
+    // --- UIテキストの初期設定 ---
+    document.getElementById('main-title').textContent = S.mainTitle;
 
     // --- DOM要素の取得 ---
     // 画面のセクション
@@ -329,6 +334,13 @@ function initializeApp() {
         totalElapsedTime++;
         domTimer.totalTime.textContent = formatTime(totalElapsedTime);
 
+        // 安全装置: 29分59秒（1799秒）で強制停止
+        if (totalElapsedTime >= 1799) {
+            stopTimer();
+            alert(S.alertTimerStopped);
+            return;
+        }
+
         // タイマーが実行中の場合のみ、ブロックの時間を減らす
         if (timerState === 'running') {
             currentBlockTimeLeft--;
@@ -499,9 +511,10 @@ function initializeApp() {
             li.className = 'recipe-item';
             li.dataset.recipeId = recipe.id;
             const typeLabel = recipe.type === 'pour' ? S.pourLabel : S.extractionLabel;
+            const weightUnit = recipe.weightUnit || 'g';
 
             li.innerHTML = `
-                <span>${recipe.name} (${recipe.beanAmount}g) [${typeLabel}]</span>
+                <span>${recipe.name} (${recipe.beanAmount}${weightUnit}) [${typeLabel}]</span>
                 <div class="recipe-item-actions">
                     <button class="btn-edit">編集</button>
                     <button class="btn-delete">削除</button>
@@ -555,11 +568,19 @@ function initializeApp() {
             const duration = parseInt(form.querySelector('.block-duration').value, 10);
             const amount = parseFloat(form.querySelector('.block-amount').value);
             const tempInput = form.querySelector('.block-temp').value;
-            const temperature = tempInput ? parseInt(tempInput, 10) : null;
+            let temperature = tempInput ? parseInt(tempInput, 10) : null;
             const comment = form.querySelector('.block-comment').value.trim();
 
             // 内部データとしては、累計量を計算して保存する
             cumulativeAmount += amount;
+
+            // 温度が最大値の場合、温度管理なし（null）として扱う
+            if (
+                (tempUnit === 'celsius' && temperature === 100) ||
+                (tempUnit === 'fahrenheit' && temperature === 212)
+            ) {
+                temperature = null;
+            }
 
             // 入力値が有効かチェック
             if (!name || isNaN(duration) || duration <= 0 || isNaN(amount) || amount <= 0) {
