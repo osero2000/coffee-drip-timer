@@ -1,5 +1,5 @@
 // --- 国際化対応 (i18n) の準備 ---
-const APP_VERSION = '1.2.7';
+const APP_VERSION = '1.2.8';
 // アプリ内で使う全ての文字列をここにまとめる
 const STRINGS = {
     ja: {
@@ -140,6 +140,25 @@ function initializeApp() {
         // 目的の画面だけを表示する
         if (screens[screenName]) {
             screens[screenName].hidden = false;
+        }
+
+        // 画面遷移時に、スマホでのズームをリセットする
+        resetZoom();
+    }
+
+    // スマホでフォーム入力後などに発生するズームをリセットする関数
+    function resetZoom() {
+        const viewportMeta = document.querySelector('meta[name="viewport"]');
+        if (viewportMeta) {
+            // content属性を一度書き換えて、ブラウザに再描画を促す
+            // maximum-scale=1.0 を一時的に設定してズームをリセット
+            viewportMeta.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0');
+
+            // 少し時間をおいてmaximum-scaleの制約を外すことで、ユーザーによるズーム操作を再度許可する
+            // このsetTimeoutがないと、ユーザーがズームできなくなる
+            setTimeout(() => {
+                viewportMeta.setAttribute('content', 'width=device-width, initial-scale=1.0');
+            }, 100);
         }
     }
 
@@ -408,22 +427,29 @@ function initializeApp() {
 
     // サウンドを再生する関数
     function playSound(soundName) {
-        if (!isSoundEnabled || !audioContext || !soundBuffers[soundName]) {
-            return;
-        }
+        // Promiseを返すようにして、再生完了を待てるようにする
+        return new Promise((resolve) => {
+            if (!isSoundEnabled || !audioContext || !soundBuffers[soundName]) {
+                resolve(); // 音が鳴らない場合でも即座に解決
+                return;
+            }
 
-        // 再生のたびに新しいソースノードを作成する
-        const source = audioContext.createBufferSource();
-        source.buffer = soundBuffers[soundName];
+            // 再生のたびに新しいソースノードを作成する
+            const source = audioContext.createBufferSource();
+            source.buffer = soundBuffers[soundName];
 
-        // 音量をコントロールするためのゲインノードを作成
-        const gainNode = audioContext.createGain();
-        gainNode.gain.value = 0.5; // 音量を50%に設定
+            // 音量をコントロールするためのゲインノードを作成
+            const gainNode = audioContext.createGain();
+            gainNode.gain.value = 0.5; // 音量を50%に設定
 
-        source.connect(gainNode);
-        gainNode.connect(audioContext.destination);
+            source.connect(gainNode);
+            gainNode.connect(audioContext.destination);
 
-        source.start(0);
+            // 再生が終了したらPromiseを解決する
+            source.onended = resolve;
+
+            source.start(0);
+        });
     }
 
     // 画面スリープを防止する
@@ -567,8 +593,9 @@ function initializeApp() {
 
     async function resetTimer() {
         if (confirm(S.confirmReset)) {
-            playSound('reset'); // リセット音
-            await stopTimer();
+            // 音が鳴り終わるのを待ってからタイマーを停止する
+            await playSound('reset');
+            await stopTimer(); // stopTimerはaudioContextを閉じるので、音の再生後に呼ぶ
         }
     }
 
