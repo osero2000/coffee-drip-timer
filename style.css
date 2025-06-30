@@ -142,11 +142,16 @@ button:hover, button:focus {
     flex-direction: column;
     gap: 8px;
     flex-grow: 1;
+    min-width: 0; /* 長いテキストが省略されるようにするため */
 }
 
 .recipe-item-name {
     font-weight: 500;
     font-size: 1.1em;
+    /* 長いレシピ名を「...」で省略するための魔法 */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .recipe-item-details {
@@ -196,6 +201,11 @@ button:hover, button:focus {
     stroke-width: 1;
     color: var(--color-border-dashed);
     margin-bottom: 15px;
+}
+
+.recipe-item-actions {
+    display: flex;
+    flex-shrink: 0; /* このコンテナが縮まないようにする */
 }
 
 .recipe-item-actions button {
@@ -329,11 +339,23 @@ button:hover, button:focus {
     gap: 15px; /* ボタンとタイトルの間に隙間を作る */
 }
 
+/* タイマー画面の戻るボタンが縮まないようにする */
+#screen-drip-timer .screen-header > .btn-secondary {
+    flex-shrink: 0;
+}
+
 /* タイマー画面のスタイル */
 #screen-drip-timer .timer-recipe-title {
     flex-grow: 1; /* 利用可能な残りのスペースをすべて埋める */
     text-align: left; /* テキストを左揃えにして表示を優先 */
     min-width: 0; /* アイテムがコンテナを超えても縮小するように */
+}
+
+/* タイマー画面のレシピ名が長すぎる場合に対応 */
+#timer-recipe-name {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 .timer-recipe-title {
     display: flex;
