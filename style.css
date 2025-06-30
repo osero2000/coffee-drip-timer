@@ -26,6 +26,7 @@ main {
     align-items: center;
     padding: 15px 20px;
     border-bottom: 1px solid #e5e5e5;
+    position: relative;
 }
 
 .screen-header h1 {
@@ -198,9 +199,11 @@ button:hover {
 
 /* タイマー画面のスタイル */
 .screen-header > .timer-recipe-title {
-    flex-grow: 1;
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 70%; /* 長いタイトルがボタンに重ならないように幅を制限 */
     text-align: center;
-    margin: 0 10px;
 }
 .timer-recipe-title {
     display: flex;

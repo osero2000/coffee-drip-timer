@@ -141,7 +141,7 @@ function initializeApp() {
                     <span class="unit">秒</span>
                 </div>
                 <div class="input-with-unit">
-                    <input type="number" class="block-amount" placeholder="目標量" value="${block.targetAmount || ''}" min="1" step="${weightStep}">
+                    <input type="number" class="block-amount" placeholder="目標量" value="${block.targetAmount || ''}" min="0" step="${weightStep}">
                     <span class="unit weight-unit-label">${weightUnit}</span>
                 </div>
                 <div class="input-with-unit">
@@ -583,7 +583,7 @@ function initializeApp() {
             }
 
             // 入力値が有効かチェック
-            if (!name || isNaN(duration) || duration <= 0 || isNaN(amount) || amount <= 0) {
+            if (!name || isNaN(duration) || duration <= 0 || isNaN(amount) || amount < 0) {
                 alert(S.alertInvalidBlock);
                 form.querySelector('.block-name').focus(); // 問題のあったフォームにフォーカス
                 return;
