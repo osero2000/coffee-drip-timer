@@ -1,5 +1,5 @@
 // --- 国際化対応 (i18n) の準備 ---
-const APP_VERSION = '1.2.4';
+const APP_VERSION = '1.2.5';
 // アプリ内で使う全ての文字列をここにまとめる
 const STRINGS = {
     ja: {
@@ -308,28 +308,49 @@ function initializeApp() {
     let wakeLock = null; // 画面スリープ防止用
     const THEME_STORAGE_KEY = 'coffee-drip-timer-theme';
     const SOUND_STORAGE_KEY = 'coffee-drip-timer-sound-enabled';
-    const sounds = {
-        countdown: new Audio('audio/countdown.mp3'),
-        stepComplete: new Audio('audio/step_complete.mp3'),
-        timerFinish: new Audio('audio/timer_finish.mp3'),
-        start: new Audio('audio/start.mp3'),
-        pause: new Audio('audio/pause.mp3'),
-        resume: new Audio('audio/resume.mp3'),
-        reset: new Audio('audio/reset.mp3'),
+
+    // Web Audio APIのセットアップ
+    let audioContext = null;
+    const soundBuffers = {};
+    let isAudioInitialized = false;
+
+    const soundUrls = {
+        countdown: 'audio/countdown.mp3',
+        stepComplete: 'audio/step_complete.mp3',
+        timerFinish: 'audio/timer_finish.mp3',
+        start: 'audio/start.mp3',
+        pause: 'audio/pause.mp3',
+        resume: 'audio/resume.mp3',
+        reset: 'audio/reset.mp3',
     };
 
-    // アプリのサウンドを事前に読み込んでおく
-    Object.values(sounds).forEach(sound => {
-        sound.load();
-        sound.volume = 0.5; // アプリ全体の音量を50%に設定
-    });
+    // AudioContextを初期化し、サウンドを読み込む関数
+    async function initAudio() {
+        if (isAudioInitialized || audioContext) return;
 
-    function playSound(soundName) {
-        if (!isSoundEnabled) return; // サウンドがオフなら何もしない
-        if (sounds[soundName]) {
-            sounds[soundName].currentTime = 0;
-            sounds[soundName].play().catch(e => console.error("サウンドの再生に失敗しました:", e));
+        // ユーザー操作をきっかけにAudioContextを生成
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        if (!audioContext) {
+            console.error("Web Audio APIはこのブラウザではサポートされていません。");
+            return;
         }
+        isAudioInitialized = true;
+        console.log("AudioContextが初期化されました。サウンドを読み込みます...");
+
+        // すべてのオーディオファイルを非同期で読み込む
+        const loadPromises = Object.entries(soundUrls).map(async ([name, url]) => {
+            try {
+                const response = await fetch(url);
+                const arrayBuffer = await response.arrayBuffer();
+                const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+                soundBuffers[name] = audioBuffer;
+            } catch (error) {
+                console.error(`サウンドの読み込みに失敗しました ${name}:`, error);
+            }
+        });
+
+        await Promise.all(loadPromises);
+        console.log("すべてのサウンドの読み込みが完了しました。");
     }
 
     // サウンドボタンのアイコンを更新する
@@ -376,6 +397,26 @@ function initializeApp() {
         const savedSetting = localStorage.getItem(SOUND_STORAGE_KEY);
         isSoundEnabled = savedSetting === null ? true : JSON.parse(savedSetting);
         updateSoundButtonIcon();
+    }
+
+    // サウンドを再生する関数
+    function playSound(soundName) {
+        if (!isSoundEnabled || !audioContext || !soundBuffers[soundName]) {
+            return;
+        }
+
+        // 再生のたびに新しいソースノードを作成する
+        const source = audioContext.createBufferSource();
+        source.buffer = soundBuffers[soundName];
+
+        // 音量をコントロールするためのゲインノードを作成
+        const gainNode = audioContext.createGain();
+        gainNode.gain.value = 0.5; // 音量を50%に設定
+
+        source.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+
+        source.start(0);
     }
 
     // 画面スリープを防止する
@@ -463,6 +504,11 @@ function initializeApp() {
     }
 
     function startTimer() {
+        // 初回のスタート時にオーディオを初期化
+        if (!isAudioInitialized) {
+            initAudio();
+        }
+
         // 停止状態からの開始
         if (timerState === 'stopped') {
             playSound('start'); // スタート音
