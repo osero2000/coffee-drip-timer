@@ -14,7 +14,10 @@
              =============================================== -->
         <section id="screen-recipe-list" class="screen">
             <header class="screen-header">
-                <h1 id="main-title"></h1>
+                <div>
+                    <button id="btn-toggle-sound" class="btn-icon"></button>
+                </div>
+                <h1 id="main-title" class="header-title-centered"></h1>
                 <button id="btn-add-new-recipe" class="btn-add">+</button>
             </header>
             <div class="screen-content">
@@ -22,7 +25,10 @@
                     <!-- ここにJavaScriptでレシピが動的に追加される -->
                 </ul>
             </div>
-            <div id="app-version-display" class="app-version"></div>
+            <footer class="app-footer">
+                <span id="app-version-display"></span>
+                <button id="btn-show-credits" class="btn-link">サウンドクレジット</button>
+            </footer>
         </section>
 
         <!-- ===============================================
@@ -31,35 +37,39 @@
         <section id="screen-recipe-settings" class="screen" hidden>
             <header class="screen-header">
                 <button id="btn-settings-back" class="btn-secondary">← 戻る</button>
-                <h1 id="settings-title">新しいレシピ</h1>
+                <h1 id="settings-title" class="header-title-centered">新しいレシピ</h1>
             </header>
             <div class="screen-content">
-                <h2>単位設定</h2>
-                <div class="form-group-horizontal">
-                    <div class="form-group">
-                        <label>管理方法:</label>
-                        <label><input type="radio" name="recipe-type" value="pour" checked> 投湯量</label>
-                        <label><input type="radio" name="recipe-type" value="extraction"> 抽出量</label>
-                    </div>
-                    <div class="form-group">
-                        <label>重量単位:</label>
-                        <label><input type="radio" name="weight-unit" value="g" checked> g</label>
-                        <label><input type="radio" name="weight-unit" value="oz"> oz</label>
-                    </div>
-                    <div class="form-group">
-                        <label>温度単位:</label>
-                        <label><input type="radio" name="temp-unit" value="celsius" checked> ℃</label>
-                        <label><input type="radio" name="temp-unit" value="fahrenheit"> ℉</label>
+                <div class="settings-group">
+                    <h2>単位設定</h2>
+                    <div class="form-group-horizontal">
+                        <div class="form-group">
+                            <label>管理方法:</label>
+                            <label><input type="radio" name="recipe-type" value="pour" checked> 投湯量</label>
+                            <label><input type="radio" name="recipe-type" value="extraction"> 抽出量</label>
+                        </div>
+                        <div class="form-group">
+                            <label>重量単位:</label>
+                            <label><input type="radio" name="weight-unit" value="g" checked> g</label>
+                            <label><input type="radio" name="weight-unit" value="oz"> oz</label>
+                        </div>
+                        <div class="form-group">
+                            <label>温度単位:</label>
+                            <label><input type="radio" name="temp-unit" value="celsius" checked> ℃</label>
+                            <label><input type="radio" name="temp-unit" value="fahrenheit"> ℉</label>
+                        </div>
                     </div>
                 </div>
-                <h2>基本情報</h2>
-                <div class="form-group">
-                    <label for="recipe-name">レシピ名:</label>
-                    <input type="text" id="recipe-name" placeholder="例: 朝の一杯用">
-                </div>
-                <div class="form-group">
-                    <label for="bean-amount">豆の量 (g):</label>
-                    <input type="number" id="bean-amount" placeholder="例: 20" min="0">
+                <div class="settings-group">
+                    <h2>基本情報</h2>
+                    <div class="form-group">
+                        <label for="recipe-name">レシピ名:</label>
+                        <input type="text" id="recipe-name" placeholder="例: 朝の一杯用">
+                    </div>
+                    <div class="form-group">
+                        <label for="bean-amount">豆の量 (g):</label>
+                        <input type="number" id="bean-amount" placeholder="例: 20" min="0">
+                    </div>
                 </div>
 
                 <!-- ブロックを追加していくエリア -->
@@ -122,6 +132,20 @@
             </div>
         </section>
     </main>
+
+    <div id="credits-modal" class="modal">
+        <div class="modal-content">
+            <button id="modal-close" class="modal-close-btn">&times;</button>
+            <h2>サウンドクレジット</h2>
+            <p>このアプリで使用しているサウンドは、以下のサイトから提供されています。素晴らしい素材をありがとうございます。</p>
+            <ul>
+                <li><a href="https://otologic.jp/" target="_blank" rel="noopener noreferrer">OtoLogic (CC BY 4.0)</a></li>
+                <li><a href="https://taira-komori.jpn.org/" target="_blank" rel="noopener noreferrer">無料効果音で遊ぼう！</a></li>
+                <li><a href="https://soundeffect-lab.info/" target="_blank" rel="noopener noreferrer">効果音ラボ</a></li>                
+                <!-- 必要に応じて、ここに他のクレジットを追加してね！ -->
+            </ul>
+        </div>
+    </div>
 
     <script src="app.js"></script>
 </body>
