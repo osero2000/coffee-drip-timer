@@ -165,7 +165,26 @@ button:hover {
     justify-content: space-around;
 }
 
+.btn-danger { background-color: #ff3b30; }
+
 /* タイマー画面のスタイル */
+.screen-header > .timer-recipe-title {
+    flex-grow: 1;
+    text-align: center;
+    margin: 0 10px;
+}
+.timer-recipe-title {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.timer-recipe-details {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    font-size: 0.9em;
+    color: #555;
+}
 .timer-layout {
     display: flex;
     flex-direction: column;
@@ -213,12 +232,20 @@ button:hover {
     color: #666;
 }
 
+.timer-controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    position: relative;
+}
 .timer-controls button {
     padding: 15px 40px;
     font-size: 1.2em;
     border-radius: 30px;
 }
-.btn-secondary { background-color: #e5e5e5; color: #333; }
-.btn-primary.running {
-    background-color: #ff3b30; /* 実行中は赤色に */
+.timer-controls .btn-danger {
+    position: absolute;
+    left: 0;
 }
+.btn-secondary { background-color: #e5e5e5; color: #333; }

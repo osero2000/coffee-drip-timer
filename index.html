@@ -29,6 +29,7 @@
              =============================================== -->
         <section id="screen-recipe-settings" class="screen" hidden>
             <header class="screen-header">
+                <button id="btn-settings-back" class="btn-secondary">← 戻る</button>
                 <h1 id="settings-title">新しいレシピ</h1>
             </header>
             <div class="screen-content">
@@ -64,7 +65,7 @@
                 <h2>ドリップ手順</h2>
                 <div class="recipe-summary">
                     <span>合計時間: <strong id="summary-total-time">0分0秒</strong></span>
-                    <span>合計量: <strong id="summary-total-amount">0g</strong></span>
+                    <span><span id="summary-amount-label">総投湯量</span>: <strong id="summary-total-amount">0g</strong></span>
                 </div>
                 <div id="blocks-container">
                     <!-- ここにJavaScriptでブロックが追加される -->
@@ -84,7 +85,14 @@
         <section id="screen-drip-timer" class="screen" hidden>
             <header class="screen-header">
                 <button id="btn-timer-back" class="btn-secondary">← 戻る</button>
-                <h1 id="timer-recipe-name">レシピ名</h1>
+                <div class="timer-recipe-title">
+                    <h1 id="timer-recipe-name">レシピ名</h1>
+                    <div class="timer-recipe-details">
+                        <span id="timer-bean-amount">豆: 20g</span>
+                        <span id="timer-total-recipe-time">時間: 3:00</span>
+                        <span id="timer-total-recipe-amount">総量: 240g</span>
+                    </div>
+                </div>
             </header>
             <div class="screen-content timer-layout">
                 <div class="timer-main-display">
@@ -94,7 +102,8 @@
                 <div class="timer-current-block">
                     <h2 id="timer-current-block-name">手順名</h2>
                     <div id="timer-block-countdown" class="timer-text-small">00:00</div>
-                    <p id="timer-target-amount">目標: 0g</p>
+                    <p id="timer-target-amount">投湯量[目標]: 0g</p>
+                    <p id="timer-current-block-temp"></p>
                     <p id="timer-block-comment" class="comment-text"></p>
                 </div>
                 <div class="timer-next-block">
@@ -102,6 +111,7 @@
                     <p id="timer-next-block-info">...</p>
                 </div>
                 <div class="timer-controls">
+                    <button id="btn-timer-reset" class="btn-danger">リセット</button>
                     <button id="btn-timer-start-stop" class="btn-primary">スタート</button>
                 </div>
             </div>

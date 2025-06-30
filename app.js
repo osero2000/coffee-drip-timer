@@ -16,12 +16,16 @@ const STRINGS = {
         newRecipeTitle: '新しいレシピ',
         editRecipeTitle: 'レシピを編集',
         noRecipes: 'まだレシピがありません。最初のレシピを登録しましょう！',
-        pourLabel: '投湯',
-        extractionLabel: '抽出',
+        pourLabel: '投湯量',
+        extractionLabel: '抽出量',
         timerStart: 'スタート',
         timerStop: 'ストップ',
         timerResume: '再開',
         dripFinish: 'ドリップ完了！お疲れ様でした！',
+        temperatureLabel: '温度',
+        dripEnd: '終わり',
+        timerFinish: '終了',
+        confirmReset: 'タイマーをリセットしますか？',
     },
     // 将来ここに en: { ... } を追加すれば英語対応できる
 };
@@ -44,7 +48,9 @@ function initializeApp() {
         addNewRecipe: document.getElementById('btn-add-new-recipe'),
         addBlock: document.getElementById('btn-add-block'),
         saveRecipe: document.getElementById('btn-save-recipe'),
+        settingsBack: document.getElementById('btn-settings-back'),
         timerBack: document.getElementById('btn-timer-back'),
+        timerReset: document.getElementById('btn-timer-reset'),
         timerStartStop: document.getElementById('btn-timer-start-stop'),
         cancelSettings: document.getElementById('btn-cancel-settings'),
     };
@@ -58,12 +64,16 @@ function initializeApp() {
 
     // タイマー画面のDOM要素をキャッシュ
     const domTimer = {
+        totalRecipeTime: document.getElementById('timer-total-recipe-time'),
+        totalRecipeAmount: document.getElementById('timer-total-recipe-amount'),
+        beanAmount: document.getElementById('timer-bean-amount'),
         recipeName: document.getElementById('timer-recipe-name'),
         totalTime: document.getElementById('timer-total-time'),
         blockName: document.getElementById('timer-current-block-name'),
         blockCountdown: document.getElementById('timer-block-countdown'),
         targetAmount: document.getElementById('timer-target-amount'),
         blockComment: document.getElementById('timer-block-comment'),
+        currentBlockTemp: document.getElementById('timer-current-block-temp'),
         nextBlockInfo: document.getElementById('timer-next-block-info'),
         startStopButton: document.getElementById('btn-timer-start-stop'),
     };
@@ -72,10 +82,11 @@ function initializeApp() {
     let editingRecipeId = null; // nullの場合は新規作成、IDが入っている場合は編集モード
     let activeRecipe = null; // タイマー画面で使うレシピ
     let timerInterval = null; // setIntervalのID
-    let timerState = 'stopped'; // 'stopped', 'running', 'paused'
+    let timerState = 'stopped'; // 'stopped', 'running', 'paused', 'finished'
     let totalElapsedTime = 0; // 合計経過時間
     let currentBlockIndex = 0; // 現在のブロックのインデックス
     let currentBlockTimeLeft = 0; // 現在のブロックの残り時間
+    let wakeLock = null; // 画面スリープ防止用
 
     // --- データストレージのロジック (localStorage) ---
     const STORAGE_KEY = 'coffee-drip-timer-recipes';
@@ -137,6 +148,7 @@ function initializeApp() {
             <input type="text" class="block-comment" placeholder="コメント (例: ドリッパーを振る)" value="${block.comment || ''}">
         `;
         containers.blocks.appendChild(newBlock);
+        newBlock.querySelector('.block-name').focus(); // 新しい手順名にフォーカス
     }
 
     // 設定画面のフォームをリセットする
@@ -175,6 +187,12 @@ function initializeApp() {
         });
     }
 
+    function updateSummaryLabels() {
+        const recipeType = document.querySelector('input[name="recipe-type"]:checked').value;
+        const label = recipeType === 'pour' ? '総投湯量' : '総抽出量';
+        document.getElementById('summary-amount-label').textContent = label;
+    }
+
     // 温度単位の変更に応じて、既存の温度入力欄のmax値を更新する
     function updateTempInputMaxValues() {
         const tempUnit = document.querySelector('input[name="temp-unit"]:checked').value;
@@ -194,24 +212,24 @@ function initializeApp() {
     function updateRecipeSummary() {
         const blockForms = Array.from(containers.blocks.querySelectorAll('.block-form'));
         let totalDuration = 0;
-        let finalAmount = 0;
+        let totalAmount = 0;
 
         blockForms.forEach(form => {
             const duration = parseInt(form.querySelector('.block-duration').value, 10) || 0;
             totalDuration += duration;
-            // 最後の有効な目標量を最終的な合計量とする
+            // 各手順の投入量を合計する
             const amount = parseFloat(form.querySelector('.block-amount').value) || 0;
-            if (amount > 0) {
-                finalAmount = amount;
-            }
+            totalAmount += amount;
         });
 
         const weightUnit = document.querySelector('input[name="weight-unit"]:checked').value;
+        // ozの時は小数点第1位まで表示、gの時は整数で表示
+        const displayAmount = weightUnit === 'oz' ? totalAmount.toFixed(1) : Math.round(totalAmount);
         const minutes = Math.floor(totalDuration / 60);
         const seconds = totalDuration % 60;
 
         document.getElementById('summary-total-time').textContent = `${minutes}分${seconds}秒`;
-        document.getElementById('summary-total-amount').textContent = `${finalAmount}${weightUnit}`;
+        document.getElementById('summary-total-amount').textContent = `${displayAmount}${weightUnit}`;
     }
 
     // 指定されたIDのレシピを編集するためにフォームを準備する
@@ -237,15 +255,53 @@ function initializeApp() {
 
         // 既存のブロックをフォームに描画
         containers.blocks.innerHTML = ''; // まずは空にする
-        recipeToEdit.blocks.forEach(block => addBlockForm(block));
+        let lastAmount = 0;
+        recipeToEdit.blocks.forEach(block => {
+            // 保存されている累計量から、このステップでの投入量を計算
+            const stepAmount = block.targetAmount - lastAmount;
+            const weightUnit = recipeToEdit.weightUnit || 'g';
+            // フォーム表示用に、ステップごとの投入量を持つ新しいオブジェクトを作成
+            const blockForForm = {
+                ...block,
+                targetAmount: weightUnit === 'oz' ? parseFloat(stepAmount.toFixed(1)) : Math.round(stepAmount),
+            };
+            addBlockForm(blockForForm);
+            lastAmount = block.targetAmount; // 次の計算のために今回の累計量を保存
+        });
 
         // 編集開始時に合計値を計算して表示
         updateRecipeSummary();
         navigateTo('recipeSettings');
+        updateSummaryLabels();
     }
 
     // --- タイマーロジック ---
     let audioContext; // サウンド再生用
+
+    // 画面スリープを防止する
+    async function requestWakeLock() {
+        if ('wakeLock' in navigator) {
+            try {
+                wakeLock = await navigator.wakeLock.request('screen');
+                console.log('画面スリープを防止します。');
+                // タブが非表示になった時などに自動で解除されるので、それをハンドル
+                wakeLock.addEventListener('release', () => {
+                    console.log('画面スリープ防止が解除されました。');
+                    wakeLock = null;
+                });
+            } catch (err) {
+                console.error(`${err.name}, ${err.message}`);
+            }
+        }
+    }
+
+    // 画面スリープ防止を解除する
+    async function releaseWakeLock() {
+        if (wakeLock !== null) {
+            await wakeLock.release();
+            wakeLock = null;
+        }
+    }
 
     // 渡された秒数を mm:ss 形式の文字列に変換する
     function formatTime(totalSeconds) {
@@ -271,62 +327,72 @@ function initializeApp() {
     // 1秒ごとに実行されるタイマーのメイン処理
     function tick() {
         totalElapsedTime++;
-        currentBlockTimeLeft--;
-
-        // UIを更新
         domTimer.totalTime.textContent = formatTime(totalElapsedTime);
-        domTimer.blockCountdown.textContent = formatTime(currentBlockTimeLeft);
 
-        // 残り5秒からビープ音を鳴らす
-        if (currentBlockTimeLeft > 0 && currentBlockTimeLeft <= 5) {
-            playBeep();
-        }
+        // タイマーが実行中の場合のみ、ブロックの時間を減らす
+        if (timerState === 'running') {
+            currentBlockTimeLeft--;
+            domTimer.blockCountdown.textContent = formatTime(currentBlockTimeLeft);
 
-        // 現在のブロックが終了したかチェック
-        if (currentBlockTimeLeft <= 0) {
-            currentBlockIndex++;
-            if (currentBlockIndex < activeRecipe.blocks.length) {
-                // 次のブロックへ
-                const nextBlock = activeRecipe.blocks[currentBlockIndex];
-                currentBlockTimeLeft = nextBlock.duration;
-                updateTimerBlockDisplay();
-            } else {
-                // 全てのブロックが終了
-                stopTimer();
-                alert(S.dripFinish);
+            // 残り5秒からビープ音を鳴らす
+            if (currentBlockTimeLeft > 0 && currentBlockTimeLeft <= 5) {
+                playBeep();
+            }
+
+            // 現在のブロックが終了したかチェック
+            if (currentBlockTimeLeft <= 0) {
+                currentBlockIndex++;
+                if (currentBlockIndex < activeRecipe.blocks.length) {
+                    // 次のブロックへ
+                    const nextBlock = activeRecipe.blocks[currentBlockIndex];
+                    currentBlockTimeLeft = nextBlock.duration;
+                    updateTimerBlockDisplay();
+                } else {
+                    // 全てのブロックが終了
+                    timerState = 'finished';
+                    domTimer.blockName.textContent = S.dripEnd;
+                    domTimer.blockCountdown.textContent = '';
+                    domTimer.startStopButton.textContent = S.timerFinish;
+                }
             }
         }
     }
 
     function startTimer() {
-        if (timerState === 'running') return;
-
         // ユーザー操作をきっかけにAudioContextを初期化
         if (!audioContext) {
             audioContext = new (window.AudioContext || window.webkitAudioContext)();
         }
 
+        // 停止状態からの開始
         if (timerState === 'stopped') {
             totalElapsedTime = 0;
             currentBlockIndex = 0;
             const firstBlock = activeRecipe.blocks[0];
             currentBlockTimeLeft = firstBlock.duration;
             updateTimerBlockDisplay();
+            timerInterval = setInterval(tick, 1000);
+            // スリープ防止を開始
+            requestWakeLock();
         }
+
+        // 実行中は何もしない
+        if (timerState === 'running') return;
 
         timerState = 'running';
         domTimer.startStopButton.textContent = S.timerStop;
-        timerInterval = setInterval(tick, 1000);
     }
 
     function pauseTimer() {
         if (timerState !== 'running') return;
         timerState = 'paused';
         domTimer.startStopButton.textContent = S.timerResume;
-        clearInterval(timerInterval);
     }
 
     function stopTimer() {
+        // スリープ防止を解除
+        releaseWakeLock();
+
         timerState = 'stopped';
         domTimer.startStopButton.textContent = S.timerStart;
         clearInterval(timerInterval);
@@ -334,17 +400,46 @@ function initializeApp() {
         renderTimerScreen(); // タイマー表示を初期状態に戻す
     }
 
+    function resetTimer() {
+        if (confirm(S.confirmReset)) {
+            stopTimer();
+        }
+    }
+
     // タイマー画面をレシピ情報で初期化・描画する
     function updateTimerBlockDisplay() {
         if (!activeRecipe) return;
         const block = activeRecipe.blocks[currentBlockIndex];
+        if (!block) return; // レシピの最後に到達した場合など
         const nextBlock = activeRecipe.blocks[currentBlockIndex + 1];
 
+        const typeLabel = activeRecipe.type === 'pour' ? S.pourLabel : S.extractionLabel;
+        const weightUnit = activeRecipe.weightUnit || 'g';
+        const tempUnit = activeRecipe.tempUnit || 'celsius';
+        const tempUnitLabel = tempUnit === 'celsius' ? '℃' : '℉';
+
+        // 現在のブロック情報を更新
         domTimer.blockName.textContent = block.name;
         domTimer.blockCountdown.textContent = formatTime(block.duration);
-        domTimer.targetAmount.textContent = `目標: ${block.targetAmount}g`;
+        const displayTargetAmount = weightUnit === 'oz' ? block.targetAmount.toFixed(1) : Math.round(block.targetAmount);
+        domTimer.targetAmount.textContent = `${typeLabel}: ${displayTargetAmount}${weightUnit}`;
         domTimer.blockComment.textContent = block.comment || '';
-        domTimer.nextBlockInfo.textContent = nextBlock ? `${nextBlock.name} (${nextBlock.duration}秒)` : '最後の工程です';
+        domTimer.currentBlockTemp.textContent = block.temperature ? `${S.temperatureLabel}: ${block.temperature}${tempUnitLabel}` : '';
+
+        // 次のブロック情報を更新
+        if (nextBlock) {
+            const nextTargetAmount = weightUnit === 'oz' ? nextBlock.targetAmount.toFixed(1) : Math.round(nextBlock.targetAmount);
+            let nextInfo = `${nextBlock.name} (${nextBlock.duration}秒 / ${nextTargetAmount}${weightUnit})`;
+            if (nextBlock.temperature) {
+                nextInfo += ` / ${nextBlock.temperature}${tempUnitLabel}`;
+            }
+            if (nextBlock.comment) {
+                nextInfo += ` / 「${nextBlock.comment}」`;
+            }
+            domTimer.nextBlockInfo.textContent = nextInfo;
+        } else {
+            domTimer.nextBlockInfo.textContent = '最後の工程です';
+        }
     }
 
     // ドリップを開始するためにタイマー画面を準備する
@@ -361,9 +456,22 @@ function initializeApp() {
     // レシピ一覧を画面に描画する
     function renderTimerScreen() {
         if (!activeRecipe) return;
+
+        const weightUnit = activeRecipe.weightUnit || 'g';
+        const totalRecipeDuration = activeRecipe.blocks.reduce((sum, block) => sum + block.duration, 0);
+        const totalRecipeAmount = activeRecipe.blocks.length > 0 ? activeRecipe.blocks[activeRecipe.blocks.length - 1].targetAmount : 0;
+        const displayAmount = weightUnit === 'oz' ? totalRecipeAmount.toFixed(1) : Math.round(totalRecipeAmount);
+        const typeLabel = activeRecipe.type === 'pour' ? S.pourLabel : S.extractionLabel;
+        const totalLabel = `総${typeLabel}`;
+
+        // タイトル部の表示を更新
         domTimer.recipeName.textContent = activeRecipe.name;
-        const totalDuration = activeRecipe.blocks.reduce((sum, block) => sum + block.duration, 0);
-        domTimer.totalTime.textContent = formatTime(totalDuration);
+        domTimer.beanAmount.textContent = `豆: ${activeRecipe.beanAmount}${weightUnit}`;
+        domTimer.totalRecipeTime.textContent = `時間: ${formatTime(totalRecipeDuration)}`;
+        domTimer.totalRecipeAmount.textContent = `${totalLabel}: ${displayAmount}${weightUnit}`;
+
+        // 合計時間を0にリセット
+        domTimer.totalTime.textContent = formatTime(0);
 
         // 最初のブロック情報を表示
         currentBlockIndex = 0;
@@ -436,6 +544,7 @@ function initializeApp() {
         // 各ブロックの入力値を取得してバリデーション
         const blockForms = containers.blocks.querySelectorAll('.block-form');
         const blocks = [];
+        let cumulativeAmount = 0;
         for (const form of blockForms) {
             const name = form.querySelector('.block-name').value.trim();
             const duration = parseInt(form.querySelector('.block-duration').value, 10);
@@ -443,6 +552,9 @@ function initializeApp() {
             const tempInput = form.querySelector('.block-temp').value;
             const temperature = tempInput ? parseInt(tempInput, 10) : null;
             const comment = form.querySelector('.block-comment').value.trim();
+
+            // 内部データとしては、累計量を計算して保存する
+            cumulativeAmount += amount;
 
             // 入力値が有効かチェック
             if (!name || isNaN(duration) || duration <= 0 || isNaN(amount) || amount <= 0) {
@@ -460,7 +572,7 @@ function initializeApp() {
                 id: `block-${Date.now()}-${blocks.length}`, // 簡易的なユニークID
                 name,
                 duration,
-                targetAmount: amount,
+                targetAmount: cumulativeAmount, // 累計量を保存
                 temperature,
                 comment
             });
@@ -513,6 +625,9 @@ function initializeApp() {
     // 「キャンセル」ボタンを押したら、レシピ一覧に戻る
     buttons.cancelSettings.addEventListener('click', () => navigateTo('recipeList'));
 
+    // 設定画面の「戻る」ボタン
+    buttons.settingsBack.addEventListener('click', () => navigateTo('recipeList'));
+
     // タイマー画面の「戻る」ボタン
     buttons.timerBack.addEventListener('click', () => {
         if (timerState !== 'stopped') {
@@ -527,10 +642,15 @@ function initializeApp() {
     // 「保存」ボタンを押したら、レシピを保存
     buttons.saveRecipe.addEventListener('click', saveCurrentRecipe);
 
+    // タイマーのリセットボタン
+    buttons.timerReset.addEventListener('click', resetTimer);
+
     // タイマーの「スタート/ストップ」ボタン
     buttons.timerStartStop.addEventListener('click', () => {
         if (timerState === 'running') {
             pauseTimer();
+        } else if (timerState === 'finished') {
+            stopTimer();
         } else {
             startTimer();
         }
@@ -543,6 +663,9 @@ function initializeApp() {
         }
         if (event.target.name === 'weight-unit') {
             updateWeightUnitLabels();
+        }
+        if (event.target.name === 'recipe-type') {
+            updateSummaryLabels();
         }
     });
 
@@ -599,6 +722,9 @@ function initializeApp() {
 
     // アプリ起動時に単位表示を初期化
     updateWeightUnitLabels();
+
+    // アプリ起動時にサマリーのラベルを初期化
+    updateSummaryLabels();
 }
 
 // DOMの読み込みが完了したらアプリを初期化
