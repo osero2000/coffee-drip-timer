@@ -254,6 +254,32 @@ button:hover {
     color: #007aff;
 }
 
+.amount-tracker {
+    margin: 10px 0;
+    padding: 10px;
+    background-color: rgba(0, 0, 0, 0.03);
+    border-radius: 8px;
+}
+.timer-current-block .amount-tracker p {
+    margin: 0;
+}
+#timer-previous-amount {
+    font-size: 1em;
+    color: #666;
+    margin-bottom: 4px;
+}
+#timer-step-amount {
+    font-size: 1.2em;
+    font-weight: 500;
+    color: #333;
+    margin-bottom: 4px;
+}
+#timer-target-amount {
+    font-size: 1.4em;
+    font-weight: 500;
+    color: #007aff;
+}
+
 .timer-current-block p {
     margin: 5px 0 0 0;
     font-size: 1.1em;

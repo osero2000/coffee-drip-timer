@@ -23,6 +23,9 @@ const STRINGS = {
         timerStop: 'ストップ',
         timerResume: '再開',
         dripFinish: 'ドリップ完了！お疲れ様でした！',
+        timerCurrentAmount: '現在',
+        timerTargetAmount: '目標量',
+        timerStepAmount: '投湯/抽出量',
         temperatureLabel: '温度',
         dripEnd: '終わり',
         timerFinish: '終了',
@@ -77,6 +80,8 @@ function initializeApp() {
         blockName: document.getElementById('timer-current-block-name'),
         blockCountdown: document.getElementById('timer-block-countdown'),
         targetAmount: document.getElementById('timer-target-amount'),
+        previousAmount: document.getElementById('timer-previous-amount'),
+        stepAmount: document.getElementById('timer-step-amount'),
         blockComment: document.getElementById('timer-block-comment'),
         currentBlockTemp: document.getElementById('timer-current-block-temp'),
         nextBlockInfo: document.getElementById('timer-next-block-info'),
@@ -423,9 +428,9 @@ function initializeApp() {
         if (!activeRecipe) return;
         const block = activeRecipe.blocks[currentBlockIndex];
         if (!block) return; // レシピの最後に到達した場合など
+        const prevBlock = currentBlockIndex > 0 ? activeRecipe.blocks[currentBlockIndex - 1] : null;
         const nextBlock = activeRecipe.blocks[currentBlockIndex + 1];
 
-        const typeLabel = activeRecipe.type === 'pour' ? S.pourLabel : S.extractionLabel;
         const weightUnit = activeRecipe.weightUnit || 'g';
         const tempUnit = activeRecipe.tempUnit || 'celsius';
         const tempUnitLabel = tempUnit === 'celsius' ? '℃' : '℉';
@@ -433,15 +438,27 @@ function initializeApp() {
         // 現在のブロック情報を更新
         domTimer.blockName.textContent = block.name;
         domTimer.blockCountdown.textContent = formatTime(block.duration);
+
+        // 累計量の表示を更新
+        const previousAmount = prevBlock ? prevBlock.targetAmount : 0;
+        const stepAmount = block.targetAmount - previousAmount;
+        const displayPreviousAmount = weightUnit === 'oz' ? previousAmount.toFixed(1) : Math.round(previousAmount);
+        const displayStepAmount = weightUnit === 'oz' ? stepAmount.toFixed(1) : Math.round(stepAmount);
         const displayTargetAmount = weightUnit === 'oz' ? block.targetAmount.toFixed(1) : Math.round(block.targetAmount);
-        domTimer.targetAmount.textContent = `${typeLabel}: ${displayTargetAmount}${weightUnit}`;
+        domTimer.previousAmount.textContent = `${S.timerCurrentAmount}: ${displayPreviousAmount}${weightUnit}`;
+        domTimer.stepAmount.textContent = `${S.timerStepAmount}: ${displayStepAmount}${weightUnit}`;
+        domTimer.targetAmount.textContent = `${S.timerTargetAmount}: ${displayTargetAmount}${weightUnit}`;
         domTimer.blockComment.textContent = block.comment || '';
         domTimer.currentBlockTemp.textContent = block.temperature ? `${S.temperatureLabel}: ${block.temperature}${tempUnitLabel}` : '';
 
         // 次のブロック情報を更新
         if (nextBlock) {
-            const nextTargetAmount = weightUnit === 'oz' ? nextBlock.targetAmount.toFixed(1) : Math.round(nextBlock.targetAmount);
-            let nextInfo = `${nextBlock.name} (${nextBlock.duration}秒 / ${nextTargetAmount}${weightUnit})`;
+            // 次の手順で投入する量を計算 (次の手順の累計量 - 現在の手順の累計量)
+            const currentCumulativeAmount = block.targetAmount;
+            const nextStepAmount = nextBlock.targetAmount - currentCumulativeAmount;
+            const displayNextStepAmount = weightUnit === 'oz' ? nextStepAmount.toFixed(1) : Math.round(nextStepAmount);
+
+            let nextInfo = `${nextBlock.name} (${nextBlock.duration}秒 / ${displayNextStepAmount}${weightUnit})`;
             if (nextBlock.temperature) {
                 nextInfo += ` / ${nextBlock.temperature}${tempUnitLabel}`;
             }
