@@ -323,13 +323,17 @@ button:hover, button:focus {
 .btn-danger { background-color: var(--color-danger); }
 .btn-success { background-color: var(--color-success); }
 
+/* タイマー画面専用のヘッダースタイル */
+#screen-drip-timer .screen-header {
+    justify-content: flex-start; /* 左揃えにする */
+    gap: 15px; /* ボタンとタイトルの間に隙間を作る */
+}
+
 /* タイマー画面のスタイル */
-.screen-header > .timer-recipe-title {
-    position: absolute;
-    left: 50%;
-    transform: translateX(-50%);
-    max-width: calc(100% - 160px); /* 左右のボタン用に80pxずつのスペースを確保 */
-    text-align: center;
+#screen-drip-timer .timer-recipe-title {
+    flex-grow: 1; /* 利用可能な残りのスペースをすべて埋める */
+    text-align: left; /* テキストを左揃えにして表示を優先 */
+    min-width: 0; /* アイテムがコンテナを超えても縮小するように */
 }
 .timer-recipe-title {
     display: flex;
@@ -338,7 +342,7 @@ button:hover, button:focus {
 }
 .timer-recipe-details {
     display: flex;
-    justify-content: center;
+    justify-content: flex-start; /* 左揃えにする */
     gap: 15px;
     font-size: 0.9em;
     color: var(--color-text-secondary);
