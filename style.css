@@ -267,7 +267,7 @@ button:hover, button:focus {
     gap: 10px;
 }
 
-.form-group-inline { display: flex; gap: 10px; align-items: center; }
+.form-group-inline { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
 .form-group-inline .block-name {
     flex-grow: 1; /* 手順名が残りのスペースを全て使う */
 }
